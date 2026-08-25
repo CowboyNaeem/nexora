@@ -24,3 +24,80 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+@keyframes productsOrbOne {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(28px, 18px, 0) scale(1.08);
+  }
+}
+
+@keyframes productsOrbTwo {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-24px, 22px, 0) scale(0.94);
+  }
+}
+
+@keyframes productsRing {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.035);
+  }
+}
+
+@keyframes productsPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+.animate-products-orb-one {
+  animation: productsOrbOne 13s ease-in-out infinite;
+}
+
+.animate-products-orb-two {
+  animation: productsOrbTwo 16s ease-in-out infinite;
+}
+
+.animate-products-ring {
+  animation: productsRing 22s linear infinite;
+}
+
+.animate-products-pulse {
+  animation: productsPulse 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-products-orb-one,
+  .animate-products-orb-two,
+  .animate-products-ring,
+  .animate-products-pulse {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
