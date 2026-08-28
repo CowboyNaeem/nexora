@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import MobileOrderDetails from "./MobileOrderDetails";
 
 type OrderItem = {
   id: string;
@@ -149,6 +150,12 @@ export default function OrderDetailsPage() {
   const [cancelError, setCancelError] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
+  /*
+   * ============================================================
+   * LOAD ORDER
+   * ============================================================
+   */
+
   useEffect(() => {
     if (!orderId) return;
 
@@ -173,8 +180,9 @@ export default function OrderDetailsPage() {
         setOrder(data.order);
       } catch (error) {
         console.error("Load order error:", error);
+
         setError(
-          "Something went wrong while loading your order."
+          "Something went wrong while loading your order.",
         );
       } finally {
         setLoading(false);
@@ -183,6 +191,12 @@ export default function OrderDetailsPage() {
 
     loadOrder();
   }, [orderId]);
+
+  /*
+   * ============================================================
+   * CANCEL ORDER
+   * ============================================================
+   */
 
   async function handleCancelOrder() {
     if (!order || cancelling) return;
@@ -206,7 +220,7 @@ export default function OrderDetailsPage() {
 
       if (!response.ok || !data.success) {
         setCancelError(
-          data.message || "Unable to cancel this order."
+          data.message || "Unable to cancel this order.",
         );
         return;
       }
@@ -243,7 +257,7 @@ export default function OrderDetailsPage() {
                       }
                     : currentOrder.payment,
               }
-            : currentOrder
+            : currentOrder,
         );
       }
 
@@ -252,510 +266,610 @@ export default function OrderDetailsPage() {
       console.error("Cancel order error:", error);
 
       setCancelError(
-        "Something went wrong while cancelling the order."
+        "Something went wrong while cancelling the order.",
       );
     } finally {
       setCancelling(false);
     }
   }
 
+  /*
+   * ============================================================
+   * LOADING
+   * ============================================================
+   */
+
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-20 text-white">
-        <div className="mx-auto max-w-5xl animate-pulse">
-          <div className="h-8 w-40 rounded bg-white/10" />
-          <div className="mt-4 h-12 w-80 rounded bg-white/10" />
-          <div className="mt-10 h-40 rounded-2xl bg-white/5" />
-          <div className="mt-5 h-64 rounded-2xl bg-white/5" />
-        </div>
-      </main>
+      <>
+        {/* Mobile Loading */}
+        <main className="min-h-screen bg-[#050506] px-4 py-6 text-white md:hidden">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 rounded-2xl bg-white/[0.04]" />
+            <div className="h-32 rounded-2xl bg-white/[0.04]" />
+            <div className="h-56 rounded-2xl bg-white/[0.04]" />
+            <div className="h-48 rounded-2xl bg-white/[0.04]" />
+          </div>
+        </main>
+
+        {/* Desktop Loading — unchanged visual language */}
+        <main className="hidden min-h-screen bg-black px-6 py-20 text-white md:block">
+          <div className="mx-auto max-w-5xl animate-pulse">
+            <div className="h-8 w-40 rounded bg-white/10" />
+            <div className="mt-4 h-12 w-80 rounded bg-white/10" />
+            <div className="mt-10 h-40 rounded-2xl bg-white/5" />
+            <div className="mt-5 h-64 rounded-2xl bg-white/5" />
+          </div>
+        </main>
+      </>
     );
   }
 
+  /*
+   * ============================================================
+   * ERROR / ORDER NOT FOUND
+   * ============================================================
+   */
+
   if (error || !order) {
     return (
-      <main className="min-h-screen bg-black px-6 py-20 text-white">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-red-500/20 bg-red-500/5 p-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-2xl">
-            !
+      <>
+        {/* Mobile Error */}
+        <main className="flex min-h-screen items-center justify-center bg-[#050506] px-5 text-white md:hidden">
+          <div className="w-full rounded-[28px] border border-red-500/20 bg-red-500/[0.04] p-6 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-xl text-red-400">
+              !
+            </div>
+
+            <h1 className="mt-5 text-xl font-semibold">
+              Unable to load order
+            </h1>
+
+            <p className="mt-3 text-sm leading-6 text-white/40">
+              {error ||
+                "The requested order could not be found."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="mt-7 w-full rounded-2xl bg-violet-500 px-6 py-3.5 text-sm font-semibold text-white transition active:scale-[0.98]"
+            >
+              Back to Shopping
+            </button>
           </div>
+        </main>
 
-          <h1 className="mt-5 text-2xl font-semibold">
-            Unable to load order
-          </h1>
+        {/* Desktop Error — unchanged */}
+        <main className="hidden min-h-screen bg-black px-6 py-20 text-white md:block">
+          <div className="mx-auto max-w-2xl rounded-3xl border border-red-500/20 bg-red-500/5 p-8 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-2xl">
+              !
+            </div>
 
-          <p className="mt-3 text-sm text-white/50">
-            {error || "The requested order could not be found."}
-          </p>
+            <h1 className="mt-5 text-2xl font-semibold">
+              Unable to load order
+            </h1>
 
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="mt-7 rounded-xl bg-violet-500 px-6 py-3 text-sm font-semibold transition hover:bg-violet-400"
-          >
-            Back to Shopping
-          </button>
-        </div>
-      </main>
+            <p className="mt-3 text-sm text-white/50">
+              {error ||
+                "The requested order could not be found."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="mt-7 rounded-xl bg-violet-500 px-6 py-3 text-sm font-semibold transition hover:bg-violet-400"
+            >
+              Back to Shopping
+            </button>
+          </div>
+        </main>
+      </>
     );
   }
 
   const canCancel = isCancellableStatus(order.status);
 
   return (
-    <main className="min-h-screen bg-black px-6 py-14 text-white">
-      <div className="mx-auto max-w-6xl">
+    <>
+      {/* ========================================================
+          MOBILE ORDER DETAILS
+          
+          IMPORTANT:
+          This is the ONLY mobile-specific branch.
+          Desktop below remains separate.
+      ======================================================== */}
 
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
+      <div className="block md:hidden">
+        <MobileOrderDetails
+          order={order}
+          canCancel={canCancel}
+          cancelling={cancelling}
+          cancelError={cancelError}
+          onCancel={() => {
+            setCancelError("");
+            setShowCancelDialog(true);
+          }}
+          onContinueShopping={() => router.push("/")}
+          onViewCart={() => router.push("/cart")}
+          onBack={() => router.back()}
+        />
+      </div>
 
-        <div className="mb-10">
-          <a
-            href="/"
-            className="inline-block text-xs font-semibold uppercase tracking-[0.25em] text-violet-400 transition-opacity hover:opacity-70"
-          >
-            NEXORA
-          </a>
+      {/* ========================================================
+          DESKTOP ORDER DETAILS
+          
+          DO NOT CHANGE.
+      ======================================================== */}
 
-          <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                Order Details
-              </h1>
+      <div className="hidden md:block">
+        <main className="min-h-screen bg-black px-6 py-14 text-white">
+          <div className="mx-auto max-w-6xl">
 
-              <p className="mt-3 text-sm text-white/40">
-                Thank you for your purchase.
-              </p>
+            {/* =====================================================
+                HEADER
+            ===================================================== */}
+
+            <div className="mb-10">
+              <a
+                href="/"
+                className="inline-block text-xs font-semibold uppercase tracking-[0.25em] text-violet-400 transition-opacity hover:opacity-70"
+              >
+                NEXORA
+              </a>
+
+              <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                  <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                    Order Details
+                  </h1>
+
+                  <p className="mt-3 text-sm text-white/40">
+                    Thank you for your purchase.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <p className="text-xs text-white/40">
+                    Order Number
+                  </p>
+
+                  <p className="mt-1 font-semibold text-violet-300">
+                    {order.orderNumber}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <p className="text-xs text-white/40">
-                Order Number
-              </p>
+            {/* =====================================================
+                SUCCESS / STATUS BANNER
+            ===================================================== */}
 
-              <p className="mt-1 font-semibold text-violet-300">
-                {order.orderNumber}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================================
-            SUCCESS / STATUS BANNER
-        ===================================================== */}
-
-        <div
-          className={`mb-8 rounded-2xl border p-5 ${
-            order.status === "CANCELLED"
-              ? "border-red-500/20 bg-red-500/5"
-              : "border-emerald-500/20 bg-emerald-500/5"
-          }`}
-        >
-          <div className="flex items-start gap-4">
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              className={`mb-8 rounded-2xl border p-5 ${
                 order.status === "CANCELLED"
-                  ? "bg-red-500/10 text-red-400"
-                  : "bg-emerald-500/10 text-emerald-400"
+                  ? "border-red-500/20 bg-red-500/5"
+                  : "border-emerald-500/20 bg-emerald-500/5"
               }`}
             >
-              {order.status === "CANCELLED" ? "×" : "✓"}
+              <div className="flex items-start gap-4">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                    order.status === "CANCELLED"
+                      ? "bg-red-500/10 text-red-400"
+                      : "bg-emerald-500/10 text-emerald-400"
+                  }`}
+                >
+                  {order.status === "CANCELLED"
+                    ? "×"
+                    : "✓"}
+                </div>
+
+                <div>
+                  <h2 className="font-semibold">
+                    {order.status === "CANCELLED"
+                      ? "Your order has been cancelled"
+                      : "Your order has been placed successfully"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-white/40">
+                    {order.status === "CANCELLED"
+                      ? "This order will no longer be processed."
+                      : `Placed on ${formatDate(order.createdAt)}`}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <h2 className="font-semibold">
-                {order.status === "CANCELLED"
-                  ? "Your order has been cancelled"
-                  : "Your order has been placed successfully"}
-              </h2>
+            {/* =====================================================
+                MAIN LAYOUT
+            ===================================================== */}
 
-              <p className="mt-1 text-sm text-white/40">
-                {order.status === "CANCELLED"
-                  ? "This order will no longer be processed."
-                  : `Placed on ${formatDate(order.createdAt)}`}
-              </p>
-            </div>
-          </div>
-        </div>
+            <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
 
-        {/* =====================================================
-            MAIN LAYOUT
-        ===================================================== */}
+              {/* ===================================================
+                  LEFT
+              =================================================== */}
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+              <div className="space-y-6">
 
-          {/* ===================================================
-              LEFT
-          =================================================== */}
+                {/* ORDER ITEMS */}
 
-          <div className="space-y-6">
+                <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                  <h2 className="text-xl font-semibold">
+                    Items
+                  </h2>
 
-            {/* ORDER ITEMS */}
+                  <div className="mt-6 divide-y divide-white/[0.08]">
+                    {order.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-5 py-5 first:pt-0 last:pb-0"
+                      >
+                        <div className="min-w-0">
+                          <h3 className="truncate font-medium">
+                            {item.productName}
+                          </h3>
 
-            <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
-              <h2 className="text-xl font-semibold">
-                Items
-              </h2>
+                          <p className="mt-1 text-sm text-white/40">
+                            SKU: {item.sku}
+                          </p>
 
-              <div className="mt-6 divide-y divide-white/[0.08]">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-5 py-5 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <h3 className="truncate font-medium">
-                        {item.productName}
-                      </h3>
+                          <p className="mt-1 text-sm text-white/40">
+                            Quantity: {item.quantity}
+                          </p>
+                        </div>
 
-                      <p className="mt-1 text-sm text-white/40">
-                        SKU: {item.sku}
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm text-white/40">
+                            ${money(item.unitPrice)} ×{" "}
+                            {item.quantity}
+                          </p>
+
+                          <p className="mt-1 font-semibold">
+                            ${money(item.totalPrice)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* SHIPPING INFORMATION */}
+
+                <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                  <h2 className="text-xl font-semibold">
+                    Shipping Information
+                  </h2>
+
+                  <div className="mt-6 grid gap-5 sm:grid-cols-2">
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/30">
+                        Name
                       </p>
 
-                      <p className="mt-1 text-sm text-white/40">
-                        Quantity: {item.quantity}
+                      <p className="mt-1 text-sm">
+                        {order.shippingName}
                       </p>
                     </div>
 
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm text-white/40">
-                        ${money(item.unitPrice)} ×{" "}
-                        {item.quantity}
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/30">
+                        Phone
                       </p>
 
-                      <p className="mt-1 font-semibold">
-                        ${money(item.totalPrice)}
+                      <p className="mt-1 text-sm">
+                        {order.shippingPhone}
                       </p>
                     </div>
+
+                    {order.shippingDivision && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-white/30">
+                          Division
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                          {order.shippingDivision}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/30">
+                        City
+                      </p>
+
+                      <p className="mt-1 text-sm">
+                        {order.shippingCity}
+                      </p>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <p className="text-xs uppercase tracking-wider text-white/30">
+                        Address
+                      </p>
+
+                      <p className="mt-1 text-sm">
+                        {order.shippingAddress}
+                      </p>
+                    </div>
+
+                    {order.shippingPostalCode && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-white/30">
+                          Postal Code
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                          {order.shippingPostalCode}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-white/30">
+                        Country
+                      </p>
+
+                      <p className="mt-1 text-sm">
+                        {order.shippingCountry}
+                      </p>
+                    </div>
+
                   </div>
-                ))}
-              </div>
-            </section>
+                </section>
 
-            {/* SHIPPING INFORMATION */}
+                {/* PAYMENT */}
 
-            <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
-              <h2 className="text-xl font-semibold">
-                Shipping Information
-              </h2>
+                <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                  <h2 className="text-xl font-semibold">
+                    Payment
+                  </h2>
 
-              <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                  {order.payment ? (
+                    <div className="mt-5 space-y-4">
 
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-white/30">
-                    Name
-                  </p>
+                      <div className="flex justify-between gap-4 text-sm">
+                        <span className="text-white/40">
+                          Method
+                        </span>
 
-                  <p className="mt-1 text-sm">
-                    {order.shippingName}
-                  </p>
-                </div>
+                        <span className="font-medium">
+                          {formatStatus(
+                            order.payment.method,
+                          )}
+                        </span>
+                      </div>
 
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-white/30">
-                    Phone
-                  </p>
+                      <div className="flex justify-between gap-4 text-sm">
+                        <span className="text-white/40">
+                          Status
+                        </span>
 
-                  <p className="mt-1 text-sm">
-                    {order.shippingPhone}
-                  </p>
-                </div>
+                        <span
+                          className={getPaymentStatusColor(
+                            order.payment.status,
+                          )}
+                        >
+                          {formatStatus(
+                            order.payment.status,
+                          )}
+                        </span>
+                      </div>
 
-                {order.shippingDivision && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-white/30">
-                      Division
-                    </p>
+                      {order.payment.transactionId && (
+                        <div className="flex justify-between gap-4 text-sm">
+                          <span className="text-white/40">
+                            Transaction ID
+                          </span>
 
-                    <p className="mt-1 text-sm">
-                      {order.shippingDivision}
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-white/30">
-                    City
-                  </p>
-
-                  <p className="mt-1 text-sm">
-                    {order.shippingCity}
-                  </p>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <p className="text-xs uppercase tracking-wider text-white/30">
-                    Address
-                  </p>
-
-                  <p className="mt-1 text-sm">
-                    {order.shippingAddress}
-                  </p>
-                </div>
-
-                {order.shippingPostalCode && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-white/30">
-                      Postal Code
-                    </p>
-
-                    <p className="mt-1 text-sm">
-                      {order.shippingPostalCode}
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-white/30">
-                    Country
-                  </p>
-
-                  <p className="mt-1 text-sm">
-                    {order.shippingCountry}
-                  </p>
-                </div>
-
-              </div>
-            </section>
-
-            {/* PAYMENT */}
-
-            <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
-              <h2 className="text-xl font-semibold">
-                Payment
-              </h2>
-
-              {order.payment ? (
-                <div className="mt-5 space-y-4">
-
-                  <div className="flex justify-between gap-4 text-sm">
-                    <span className="text-white/40">
-                      Method
-                    </span>
-
-                    <span className="font-medium">
-                      {formatStatus(order.payment.method)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between gap-4 text-sm">
-                    <span className="text-white/40">
-                      Status
-                    </span>
-
-                    <span
-                      className={getPaymentStatusColor(
-                        order.payment.status
+                          <span className="font-mono text-xs">
+                            {order.payment.transactionId}
+                          </span>
+                        </div>
                       )}
-                    >
-                      {formatStatus(order.payment.status)}
-                    </span>
-                  </div>
 
-                  {order.payment.transactionId && (
-                    <div className="flex justify-between gap-4 text-sm">
-                      <span className="text-white/40">
-                        Transaction ID
-                      </span>
-
-                      <span className="font-mono text-xs">
-                        {order.payment.transactionId}
-                      </span>
                     </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-white/40">
+                      Payment information is not available.
+                    </p>
                   )}
+                </section>
 
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-white/40">
-                  Payment information is not available.
-                </p>
-              )}
-            </section>
+                {/* SHIPMENT */}
 
-            {/* SHIPMENT */}
+                {order.shipment && (
+                  <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                    <h2 className="text-xl font-semibold">
+                      Delivery
+                    </h2>
 
-            {order.shipment && (
-              <section className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                    <div className="mt-5 space-y-4">
+
+                      <div className="flex justify-between gap-4 text-sm">
+                        <span className="text-white/40">
+                          Status
+                        </span>
+
+                        <span>
+                          {formatStatus(
+                            order.shipment.status,
+                          )}
+                        </span>
+                      </div>
+
+                      {order.shipment.courier && (
+                        <div className="flex justify-between gap-4 text-sm">
+                          <span className="text-white/40">
+                            Courier
+                          </span>
+
+                          <span>
+                            {order.shipment.courier}
+                          </span>
+                        </div>
+                      )}
+
+                      {order.shipment.trackingNumber && (
+                        <div className="flex justify-between gap-4 text-sm">
+                          <span className="text-white/40">
+                            Tracking Number
+                          </span>
+
+                          <span className="font-mono text-xs">
+                            {order.shipment.trackingNumber}
+                          </span>
+                        </div>
+                      )}
+
+                    </div>
+                  </section>
+                )}
+
+              </div>
+
+              {/* ===================================================
+                  RIGHT SIDEBAR
+              =================================================== */}
+
+              <aside className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6 lg:sticky lg:top-8">
+
                 <h2 className="text-xl font-semibold">
-                  Delivery
+                  Order Summary
                 </h2>
 
-                <div className="mt-5 space-y-4">
+                <div className="mt-6 space-y-4">
 
-                  <div className="flex justify-between gap-4 text-sm">
+                  <div className="flex justify-between text-sm">
                     <span className="text-white/40">
-                      Status
+                      Subtotal
                     </span>
 
                     <span>
-                      {formatStatus(order.shipment.status)}
+                      ${money(order.subtotal)}
                     </span>
                   </div>
 
-                  {order.shipment.courier && (
-                    <div className="flex justify-between gap-4 text-sm">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/40">
+                      Shipping
+                    </span>
+
+                    <span>
+                      {Number(order.shippingCost) === 0
+                        ? "Free"
+                        : `$${money(order.shippingCost)}`}
+                    </span>
+                  </div>
+
+                  {Number(order.discountAmount) > 0 && (
+                    <div className="flex justify-between text-sm">
                       <span className="text-white/40">
-                        Courier
+                        Discount
                       </span>
 
-                      <span>
-                        {order.shipment.courier}
+                      <span className="text-emerald-400">
+                        -${money(order.discountAmount)}
                       </span>
                     </div>
                   )}
 
-                  {order.shipment.trackingNumber && (
-                    <div className="flex justify-between gap-4 text-sm">
-                      <span className="text-white/40">
-                        Tracking Number
+                  <div className="border-t border-white/[0.08] pt-5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">
+                        Total
                       </span>
 
-                      <span className="font-mono text-xs">
-                        {order.shipment.trackingNumber}
+                      <span className="text-2xl font-semibold">
+                        ${money(order.totalAmount)}
                       </span>
                     </div>
-                  )}
+                  </div>
 
                 </div>
-              </section>
-            )}
 
+                {/* ORDER STATUS */}
+
+                <div className="mt-7 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                  <p className="text-xs uppercase tracking-wider text-white/30">
+                    Order Status
+                  </p>
+
+                  <p
+                    className={`mt-2 font-semibold ${getStatusColor(
+                      order.status,
+                    )}`}
+                  >
+                    {formatStatus(order.status)}
+                  </p>
+                </div>
+
+                {/* CANCEL ERROR */}
+
+                {cancelError && (
+                  <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                    <p className="text-sm text-red-400">
+                      {cancelError}
+                    </p>
+                  </div>
+                )}
+
+                {/* CANCEL BUTTON */}
+
+                {canCancel && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCancelError("");
+                      setShowCancelDialog(true);
+                    }}
+                    disabled={cancelling}
+                    className="mt-4 w-full rounded-xl border border-red-500/20 bg-red-500/5 py-3.5 text-sm font-semibold text-red-400 transition hover:border-red-500/30 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel Order
+                  </button>
+                )}
+
+                {/* CONTINUE SHOPPING */}
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="mt-6 w-full rounded-xl bg-violet-500 py-3.5 text-sm font-semibold transition hover:bg-violet-400"
+                >
+                  Continue Shopping
+                </button>
+
+                {/* VIEW CART */}
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/cart")}
+                  className="mt-3 w-full rounded-xl border border-white/10 py-3.5 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white"
+                >
+                  View Cart
+                </button>
+
+              </aside>
+
+            </div>
           </div>
-
-          {/* ===================================================
-              RIGHT SIDEBAR
-          =================================================== */}
-
-          <aside className="h-fit rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6 lg:sticky lg:top-8">
-
-            <h2 className="text-xl font-semibold">
-              Order Summary
-            </h2>
-
-            <div className="mt-6 space-y-4">
-
-              <div className="flex justify-between text-sm">
-                <span className="text-white/40">
-                  Subtotal
-                </span>
-
-                <span>
-                  ${money(order.subtotal)}
-                </span>
-              </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-white/40">
-                  Shipping
-                </span>
-
-                <span>
-                  {Number(order.shippingCost) === 0
-                    ? "Free"
-                    : `$${money(order.shippingCost)}`}
-                </span>
-              </div>
-
-              {Number(order.discountAmount) > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/40">
-                    Discount
-                  </span>
-
-                  <span className="text-emerald-400">
-                    -${money(order.discountAmount)}
-                  </span>
-                </div>
-              )}
-
-              <div className="border-t border-white/[0.08] pt-5">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">
-                    Total
-                  </span>
-
-                  <span className="text-2xl font-semibold">
-                    ${money(order.totalAmount)}
-                  </span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* ORDER STATUS */}
-
-            <div className="mt-7 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-              <p className="text-xs uppercase tracking-wider text-white/30">
-                Order Status
-              </p>
-
-              <p
-                className={`mt-2 font-semibold ${getStatusColor(
-                  order.status
-                )}`}
-              >
-                {formatStatus(order.status)}
-              </p>
-            </div>
-
-            {/* CANCEL ERROR */}
-
-            {cancelError && (
-              <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                <p className="text-sm text-red-400">
-                  {cancelError}
-                </p>
-              </div>
-            )}
-
-            {/* CANCEL BUTTON */}
-
-            {canCancel && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCancelError("");
-                  setShowCancelDialog(true);
-                }}
-                disabled={cancelling}
-                className="mt-4 w-full rounded-xl border border-red-500/20 bg-red-500/5 py-3.5 text-sm font-semibold text-red-400 transition hover:border-red-500/30 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel Order
-              </button>
-            )}
-
-            {/* CONTINUE SHOPPING */}
-
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="mt-6 w-full rounded-xl bg-violet-500 py-3.5 text-sm font-semibold transition hover:bg-violet-400"
-            >
-              Continue Shopping
-            </button>
-
-            {/* VIEW CART */}
-
-            <button
-              type="button"
-              onClick={() => router.push("/cart")}
-              className="mt-3 w-full rounded-xl border border-white/10 py-3.5 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white"
-            >
-              View Cart
-            </button>
-
-          </aside>
-
-        </div>
+        </main>
       </div>
 
-      {/* =======================================================
+      {/* ========================================================
           CANCEL CONFIRMATION DIALOG
-      ======================================================= */}
+          
+          Shared by desktop + mobile.
+          Existing API/functionality preserved.
+      ======================================================== */}
 
       {showCancelDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 px-5 backdrop-blur-sm">
 
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111111] p-6 shadow-2xl">
 
@@ -813,9 +927,9 @@ export default function OrderDetailsPage() {
             </div>
 
           </div>
+
         </div>
       )}
-
-    </main>
+    </>
   );
 }

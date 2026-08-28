@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+
 import { usePathname } from "next/navigation";
+
 import { useEffect, useState } from "react";
 
 function ArrowLeftIcon() {
@@ -79,8 +81,30 @@ function UserIcon() {
   );
 }
 
+function TrackOrderIcon() {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 3h9l4 4v14H6V3Z" />
+      <path d="M15 3v5h4" />
+      <path d="M9 13h6" />
+      <path d="M9 17h4" />
+    </svg>
+  );
+}
+
 export default function StoreHeader() {
   const pathname = usePathname();
+
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
@@ -98,6 +122,7 @@ export default function StoreHeader() {
           if (!cancelled) {
             setCartCount(0);
           }
+
           return;
         }
 
@@ -178,6 +203,20 @@ export default function StoreHeader() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Track Order
+              Desktop only so the existing mobile header remains unchanged. */}
+          <Link
+            href="/track-order"
+            aria-label="Track your order"
+            className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 text-white/45 transition-all duration-200 hover:border-violet-500/20 hover:bg-violet-500/[0.06] hover:text-white md:flex"
+          >
+            <TrackOrderIcon />
+
+            <span className="text-[10px] font-medium">
+              Track Order
+            </span>
+          </Link>
+
           {/* Wishlist */}
           <Link
             href="/wishlist"

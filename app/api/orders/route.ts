@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/auth";
+
+const GUEST_CART_COOKIE = "nexora_guest_id";
 
 type PaymentMethod =
   | "CASH_ON_DELIVERY"
@@ -12,24 +15,70 @@ type MobileProvider =
   | "NAGAD"
   | "ROCKET";
 
-async function getUserId() {
+type OrderOwner =
+  | {
+      type: "user";
+      userId: string;
+    }
+  | {
+      type: "guest";
+      guestId: string;
+    };
+
+// ============================================================
+// Get the current checkout owner.
+//
+// Logged-in customer:
+//   nexora_session → userId
+//
+// Guest:
+//   nexora_guest_id → guestId
+// ============================================================
+
+async function getOrderOwner(): Promise<OrderOwner | null> {
   const cookieStore = await cookies();
 
-  const token =
+  // ----------------------------------------------------------
+  // First check authenticated customer
+  // ----------------------------------------------------------
+
+  const sessionToken =
     cookieStore.get("nexora_session")?.value;
 
-  if (!token) {
-    return null;
+  if (sessionToken) {
+    const session =
+      await verifySession(sessionToken);
+
+    if (session) {
+      return {
+        type: "user",
+        userId: session.userId,
+      };
+    }
   }
 
-  const session = await verifySession(token);
+  // ----------------------------------------------------------
+  // Then check guest identity
+  // ----------------------------------------------------------
 
-  if (!session) {
-    return null;
+  const guestId =
+    cookieStore.get(
+      GUEST_CART_COOKIE,
+    )?.value;
+
+  if (guestId) {
+    return {
+      type: "guest",
+      guestId,
+    };
   }
 
-  return session.userId;
+  return null;
 }
+
+// ============================================================
+// Create unique NEXORA order number
+// ============================================================
 
 function createOrderNumber() {
   const randomPart = Math.random()
@@ -40,25 +89,84 @@ function createOrderNumber() {
   return `NEX-${Date.now()}-${randomPart}`;
 }
 
-export async function POST(request: Request) {
-  try {
-    const userId = await getUserId();
+// ============================================================
+// Get cart belonging to current owner
+// ============================================================
 
-    if (!userId) {
+async function getCartForOwner(
+  owner: OrderOwner,
+) {
+  const where =
+    owner.type === "user"
+      ? {
+          userId: owner.userId,
+        }
+      : {
+          guestId: owner.guestId,
+        };
+
+  return prisma.cart.findUnique({
+    where,
+    include: {
+      items: {
+        include: {
+          product: {
+            include: {
+              inventory: true,
+            },
+          },
+          variant: true,
+        },
+      },
+    },
+  });
+}
+
+// ============================================================
+// POST /api/orders
+//
+// Creates an order for either:
+//
+// 1. authenticated customer
+// 2. guest customer
+// ============================================================
+
+export async function POST(
+  request: Request,
+) {
+  try {
+    // --------------------------------------------------------
+    // Identify customer / guest
+    // --------------------------------------------------------
+
+    const owner =
+      await getOrderOwner();
+
+    if (!owner) {
       return NextResponse.json(
         {
           success: false,
-          message: "Not authenticated",
+          message:
+            "Unable to identify your shopping session. Please refresh and try again.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
+
+    // --------------------------------------------------------
+    // Parse request body
+    // --------------------------------------------------------
 
     const body = await request.json();
 
     const shippingName =
       typeof body.shippingName === "string"
         ? body.shippingName.trim()
+        : "";
+
+    const shippingEmail =
+      typeof body.shippingEmail === "string"
+        ? body.shippingEmail.trim().toLowerCase()
         : "";
 
     const shippingPhone =
@@ -99,28 +207,59 @@ export async function POST(request: Request) {
         ? body.transactionId.trim()
         : null;
 
-    // =====================================================
+    // ========================================================
     // Validation
-    // =====================================================
+    // ========================================================
 
     if (!shippingName) {
       return NextResponse.json(
         {
           success: false,
-          message: "Shipping name is required.",
+          message:
+            "Shipping name is required.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!/^01[3-9]\d{8}$/.test(shippingPhone)) {
+    if (!shippingEmail) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Shipping email is required.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        shippingEmail,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Invalid email address.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !/^01[3-9]\d{8}$/.test(
+        shippingPhone,
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,
           message:
             "Invalid Bangladesh phone number.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -131,7 +270,7 @@ export async function POST(request: Request) {
           message:
             "Shipping division is required.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -142,7 +281,7 @@ export async function POST(request: Request) {
           message:
             "Shipping district is required.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -153,24 +292,34 @@ export async function POST(request: Request) {
           message:
             "Shipping address is required.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    // --------------------------------------------------------
+    // Payment validation
+    // --------------------------------------------------------
+
     if (
-      paymentMethod !== "CASH_ON_DELIVERY" &&
-      paymentMethod !== "MOBILE_BANKING"
+      paymentMethod !==
+        "CASH_ON_DELIVERY" &&
+      paymentMethod !==
+        "MOBILE_BANKING"
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid payment method.",
+          message:
+            "Invalid payment method.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (paymentMethod === "MOBILE_BANKING") {
+    if (
+      paymentMethod ===
+      "MOBILE_BANKING"
+    ) {
       if (
         paymentProvider !== "BKASH" &&
         paymentProvider !== "NAGAD" &&
@@ -182,7 +331,7 @@ export async function POST(request: Request) {
             message:
               "Please select bKash, Nagad or Rocket.",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -193,126 +342,157 @@ export async function POST(request: Request) {
             message:
               "Mobile banking transaction ID is required.",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
 
-    // =====================================================
+    // ========================================================
     // Load cart
-    // =====================================================
+    // ========================================================
 
-    const cart = await prisma.cart.findUnique({
-      where: {
-        userId,
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                inventory: true,
-              },
-            },
-            variant: true,
-          },
-        },
-      },
-    });
+    const cart =
+      await getCartForOwner(owner);
 
-    if (!cart || cart.items.length === 0) {
+    if (
+      !cart ||
+      cart.items.length === 0
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Your cart is empty.",
+          message:
+            "Your cart is empty.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // =====================================================
+    // ========================================================
     // Calculate order
-    // =====================================================
+    // ========================================================
 
     let subtotal = 0;
 
     const orderItems: {
-  productId: string;
-  variantId: string | null;
-  productName: string;
-  sku: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}[] = [];
+      productId: string;
+      variantId: string | null;
+      productName: string;
+      sku: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }[] = [];
 
     for (const item of cart.items) {
-      const product = item.product;
+      const product =
+        item.product;
 
-      if (product.status !== "ACTIVE") {
+      // ------------------------------------------------------
+      // Product availability
+      // ------------------------------------------------------
+
+      if (
+        product.status !==
+        "ACTIVE"
+      ) {
         return NextResponse.json(
           {
             success: false,
             message: `${product.name} is no longer available.`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      let unitPrice = Number(product.price);
-      let sku = product.sku;
+      let unitPrice =
+        Number(product.price);
+
+      let sku =
+        product.sku;
+
+      // ------------------------------------------------------
+      // Variant handling
+      // ------------------------------------------------------
 
       if (item.variant) {
-        if (item.variant.price !== null) {
-          unitPrice = Number(item.variant.price);
+        if (
+          item.variant.price !==
+          null
+        ) {
+          unitPrice =
+            Number(
+              item.variant.price,
+            );
         }
 
-        sku = item.variant.sku;
+        sku =
+          item.variant.sku;
 
-        if (item.variant.stock < item.quantity) {
+        if (
+          item.variant.stock <
+          item.quantity
+        ) {
           return NextResponse.json(
             {
               success: false,
               message:
                 `Not enough stock available for ${product.name}.`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
+
+      // ------------------------------------------------------
+      // Product inventory
+      // ------------------------------------------------------
 
       if (product.inventory) {
         const availableStock =
           product.inventory.quantity -
           product.inventory.reserved;
 
-        if (availableStock < item.quantity) {
+        if (
+          availableStock <
+          item.quantity
+        ) {
           return NextResponse.json(
             {
               success: false,
               message:
                 `Not enough stock available for ${product.name}.`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
 
       const totalPrice =
-        unitPrice * item.quantity;
+        unitPrice *
+        item.quantity;
 
-      subtotal += totalPrice;
+      subtotal +=
+        totalPrice;
 
       orderItems.push({
-        productId: product.id,
-        variantId: item.variantId,
-        productName: product.name,
+        productId:
+          product.id,
+        variantId:
+          item.variantId,
+        productName:
+          product.name,
         sku,
-        quantity: item.quantity,
+        quantity:
+          item.quantity,
         unitPrice,
         totalPrice,
       });
     }
+
+    // ========================================================
+    // Pricing
+    // ========================================================
 
     const shippingCost = 0;
     const discountAmount = 0;
@@ -322,112 +502,164 @@ export async function POST(request: Request) {
       shippingCost -
       discountAmount;
 
-    // =====================================================
-    // Create everything using a Prisma transaction
-    // with extended connection timeout
-    // =====================================================
+    // ========================================================
+    // Create order transaction
+    // ========================================================
 
-    const result = await prisma.$transaction(
-      async (tx) => {
-        const order = await tx.order.create({
-          data: {
-            userId,
+    const result =
+      await prisma.$transaction(
+        async (tx) => {
+          // --------------------------------------------------
+          // Build order owner fields
+          // --------------------------------------------------
 
-            orderNumber: createOrderNumber(),
+          const orderOwnerData =
+            owner.type === "user"
+              ? {
+                  userId:
+                    owner.userId,
+                  guestId: null,
+                }
+              : {
+                  userId: null,
+                  guestId:
+                    owner.guestId,
+                };
 
-            status: "PENDING",
+          // --------------------------------------------------
+          // Create order
+          // --------------------------------------------------
 
-            subtotal,
-            shippingCost,
-            discountAmount,
-            totalAmount,
+          const order =
+            await tx.order.create({
+              data: {
+                ...orderOwnerData,
 
-            shippingName,
-            shippingPhone,
-            shippingDivision,
-            shippingAddress,
-            shippingCity,
-            shippingPostalCode,
-            shippingCountry: "Bangladesh",
+                orderNumber:
+                  createOrderNumber(),
 
-            items: {
-              create: orderItems,
+                status:
+                  "PENDING",
+
+                subtotal,
+                shippingCost,
+                discountAmount,
+                totalAmount,
+
+                shippingName,
+                shippingEmail,
+                shippingPhone,
+                shippingDivision,
+                shippingAddress,
+                shippingCity,
+                shippingPostalCode,
+                shippingCountry:
+                  "Bangladesh",
+
+                items: {
+                  create:
+                    orderItems,
+                },
+              },
+
+              select: {
+                id: true,
+                orderNumber: true,
+                totalAmount: true,
+              },
+            });
+
+          // --------------------------------------------------
+          // Create payment
+          // --------------------------------------------------
+
+          await tx.payment.create({
+            data: {
+              orderId:
+                order.id,
+
+              method:
+                paymentMethod,
+
+              provider:
+                paymentMethod ===
+                "MOBILE_BANKING"
+                  ? paymentProvider
+                  : null,
+
+              status:
+                paymentMethod ===
+                "MOBILE_BANKING"
+                  ? "PAID"
+                  : "PENDING",
+
+              amount:
+                totalAmount,
+
+              transactionId:
+                paymentMethod ===
+                "MOBILE_BANKING"
+                  ? transactionId
+                  : null,
+
+              paidAt:
+                paymentMethod ===
+                "MOBILE_BANKING"
+                  ? new Date()
+                  : null,
             },
-          },
+          });
 
-          select: {
-            id: true,
-            orderNumber: true,
-            totalAmount: true,
-          },
-        });
-await tx.payment.create({
-  data: {
-    orderId: order.id,
+          // --------------------------------------------------
+          // Create shipment
+          // --------------------------------------------------
 
-    method: paymentMethod,
+          await tx.shipment.create({
+            data: {
+              orderId:
+                order.id,
 
-    provider:
-      paymentMethod === "MOBILE_BANKING"
-        ? paymentProvider
-        : null,
+              status:
+                "PENDING",
+            },
+          });
 
-    status:
-      paymentMethod === "MOBILE_BANKING"
-        ? "PAID"
-        : "PENDING",
+          // --------------------------------------------------
+          // Clear current cart
+          // --------------------------------------------------
 
-    amount: totalAmount,
+          await tx.cartItem.deleteMany({
+            where: {
+              cartId:
+                cart.id,
+            },
+          });
 
-    transactionId:
-      paymentMethod === "MOBILE_BANKING"
-        ? transactionId
-        : null,
+          return order;
+        },
+        {
+          maxWait: 10000,
+          timeout: 20000,
+        },
+      );
 
-    paidAt:
-      paymentMethod === "MOBILE_BANKING"
-        ? new Date()
-        : null,
-  },
-});
-        
-        await tx.shipment.create({
-          data: {
-            orderId: order.id,
-            status: "PENDING",
-          },
-        });
-
-        await tx.cartItem.deleteMany({
-          where: {
-            cartId: cart.id,
-          },
-        });
-
-        return order;
-      },
-      {
-        maxWait: 10000,
-        timeout: 20000,
-      }
-    );
-
-    // =====================================================
+    // ========================================================
     // Success
-    // =====================================================
+    // ========================================================
 
     return NextResponse.json(
       {
         success: true,
-        message: "Order placed successfully.",
+        message:
+          "Order placed successfully.",
         order: result,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error(
       "NEXORA order creation error:",
-      error
+      error,
     );
 
     return NextResponse.json(
@@ -436,60 +668,98 @@ await tx.payment.create({
         message:
           "Unable to place your order. Please try again.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
+
+// ============================================================
+// GET /api/orders
+//
+// Order history remains authenticated-only.
+// Guests do not have an account order history.
+// ============================================================
+
 export async function GET() {
   try {
-    const userId = await getUserId();
+    const cookieStore =
+      await cookies();
 
-    if (!userId) {
+    const token =
+      cookieStore.get(
+        "nexora_session",
+      )?.value;
+
+    if (!token) {
       return NextResponse.json(
         {
           success: false,
-          message: "Not authenticated",
+          message:
+            "Not authenticated",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const orders = await prisma.order.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        payment: true,
-        shipment: true,
-        items: {
-          select: {
-            id: true,
-            productName: true,
-            quantity: true,
-            unitPrice: true,
-            totalPrice: true,
-            sku: true,
+    const session =
+      await verifySession(token);
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Not authenticated",
+        },
+        { status: 401 },
+      );
+    }
+
+    const orders =
+      await prisma.order.findMany({
+        where: {
+          userId:
+            session.userId,
+        },
+
+        orderBy: {
+          createdAt: "desc",
+        },
+
+        include: {
+          payment: true,
+          shipment: true,
+
+          items: {
+            select: {
+              id: true,
+              productName: true,
+              quantity: true,
+              unitPrice: true,
+              totalPrice: true,
+              sku: true,
+            },
           },
         },
-      },
-    });
+      });
 
     return NextResponse.json({
       success: true,
       orders,
     });
   } catch (error) {
-    console.error("NEXORA orders GET error:", error);
+    console.error(
+      "NEXORA orders GET error:",
+      error,
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to load your orders.",
+        message:
+          "Unable to load your orders.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

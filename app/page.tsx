@@ -305,6 +305,7 @@ export default function HomePage() {
 
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartCount, setCartCount] = useState(0);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
 
   const [products, setProducts] = useState<Product[]>([]);
 const [productsLoading, setProductsLoading] = useState(true);
@@ -656,6 +657,72 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
   }, [activeSearch, products]);
 
   /* =======================================================
+     REAL FEATURED / HOT PRODUCTS
+  ======================================================= */
+
+  const featuredProducts = useMemo(() => {
+    const ranked = products
+      .map((product) => {
+        let score = 0;
+        if (product.badgeType === "hot") score += 50;
+        if (product.badgeType === "sale") score += 30;
+        if (product.badgeType === "new") score += 15;
+        score += Math.min(product.rating || 0, 5) * 10;
+        score += Math.min(product.reviews || 0, 500) / 25;
+        if (product.oldPrice && product.oldPrice > product.price) score += 12;
+        if (product.image) score += 5;
+        return { product, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ product }) => product);
+
+    return ranked.slice(0, 5);
+  }, [products]);
+
+  /* =======================================================
+     REAL NEW ARRIVALS / DEALS
+  ======================================================= */
+
+  const newArrivalProducts = useMemo(() => {
+    return products
+      .filter((product) => product.badgeType === "new")
+      .sort((a, b) => {
+        const ratingScore = (b.rating || 0) - (a.rating || 0);
+        if (ratingScore !== 0) return ratingScore;
+        return (b.reviews || 0) - (a.reviews || 0);
+      })
+      .slice(0, 8);
+  }, [products]);
+
+  const dealProducts = useMemo(() => {
+    const saleProducts = products
+      .filter((product) => product.oldPrice && product.oldPrice > product.price)
+      .sort((a, b) => {
+        const discountA = a.oldPrice ? (a.oldPrice - a.price) / a.oldPrice : 0;
+        const discountB = b.oldPrice ? (b.oldPrice - b.price) / b.oldPrice : 0;
+        return discountB - discountA;
+      });
+
+    return (saleProducts.length ? saleProducts : products).slice(0, 6);
+  }, [products]);
+
+  useEffect(() => {
+    if (featuredProducts.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setFeaturedIndex((current) => (current + 1) % featuredProducts.length);
+    }, 4500);
+
+    return () => window.clearInterval(timer);
+  }, [featuredProducts.length]);
+
+  useEffect(() => {
+    if (featuredIndex >= featuredProducts.length) {
+      setFeaturedIndex(0);
+    }
+  }, [featuredIndex, featuredProducts.length]);
+
+  /* =======================================================
      SEARCH SUBMIT
   ======================================================= */
 
@@ -789,7 +856,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
      CART
   ======================================================= */
 
-  async function addToCart(productId: string) {
+  async function addToCart(productId: string): Promise<boolean> {
   try {
     const response = await fetch("/api/cart", {
       method: "POST",
@@ -807,17 +874,30 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
     if (!response.ok || !data.success) {
       alert(data.message || "Could not add product to cart");
-      return;
+      return false;
     }
 
     setCartCount(data.cart?.items?.length ?? 0);
 
     console.log("Added to cart:", data);
+    return true;
   } catch (error) {
     console.error("Add to cart error:", error);
     alert("Something went wrong while adding to cart");
+    return false;
   }
 }
+
+  /* =======================================================
+     TRACK ORDER
+  ======================================================= */
+
+  function openTrackOrder() {
+    setMenuOpen(false);
+    setMobileSearchOpen(false);
+    setAccountOpen(false);
+    router.push("/track-order");
+  }
 
   /* =======================================================
      LOGOUT
@@ -855,7 +935,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
     : "N";
 
   return (
-    <main className="min-h-screen bg-[#070709] text-white selection:bg-violet-500/30">
+    <main className="min-h-screen bg-[#070709] pb-20 text-white selection:bg-violet-500/30 lg:pb-0">
       {/* =====================================================
           BACKGROUND
       ===================================================== */}
@@ -880,7 +960,169 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
           HEADER
       ===================================================== */}
 
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#070709]/88 backdrop-blur-2xl">
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#070709]/92 backdrop-blur-2xl">
+        {/* =====================================================
+            MOBILE HEADER — desktop header remains unchanged
+        ===================================================== */}
+        <div className="lg:hidden">
+          <div className="mx-auto max-w-md px-4 pb-3 pt-3">
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((value) => !value)}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/70 transition active:scale-95"
+              >
+                {menuOpen ? <CloseIcon /> : <MenuIcon />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="mx-auto flex items-center gap-2"
+                aria-label="NEXORA home"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 text-sm font-black shadow-lg shadow-violet-500/20">
+                  N
+                </span>
+                <span className="text-[14px] font-semibold tracking-[0.24em] text-white">
+                  NEXORA
+                </span>
+              </button>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => router.push("/wishlist")}
+                  aria-label="Wishlist"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/70 transition active:scale-95"
+                >
+                  <HeartIcon />
+                  {wishlist.length > 0 && <Badge>{wishlist.length}</Badge>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/cart")}
+                  aria-label="Shopping cart"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/70 transition active:scale-95"
+                >
+                  <CartIcon />
+                  {cartCount > 0 && <Badge>{cartCount}</Badge>}
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={submitSearch}
+              onBlur={() => {
+                window.setTimeout(() => setSearchFocused(false), 140);
+              }}
+              className="relative mt-3"
+            >
+              <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-white/35">
+                <SearchIcon />
+              </span>
+
+              <input
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setSearchFocused(true);
+                }}
+                onFocus={() => setSearchFocused(true)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search products..."
+                aria-label="Search products"
+                aria-expanded={searchFocused && Boolean(search.trim())}
+                aria-autocomplete="list"
+                autoComplete="off"
+                className="h-11 w-full rounded-xl border border-white/[0.09] bg-white/[0.035] pl-10 pr-10 text-xs text-white outline-none transition focus:border-violet-400/40 focus:bg-white/[0.05] focus:ring-4 focus:ring-violet-500/[0.05] placeholder:text-white/25"
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 z-20 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-white/35 transition hover:bg-white/10 hover:text-white"
+                >
+                  <CloseIcon />
+                </button>
+              )}
+
+              {searchFocused && search.trim() && (
+                <SearchSuggestionDropdown
+                  query={search}
+                  suggestions={searchSuggestions}
+                  selectedIndex={suggestionIndex}
+                  onSelect={selectSearchSuggestion}
+                  onViewAll={() => submitSearch()}
+                  compact
+                />
+              )}
+            </form>
+
+            {menuOpen && (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101014]/95 p-2 shadow-2xl backdrop-blur-2xl">
+                <MobileNav label="Shop" onClick={() => { setMenuOpen(false); router.push("/products"); }} />
+                <MobileNav
+                  label="Categories"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.setTimeout(() => {
+                      document.getElementById("categories")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                />
+                <MobileNav
+                  label="Deals"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.setTimeout(() => {
+                      document.getElementById("deals")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                />
+                <MobileNav
+                  label="New arrivals"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.setTimeout(() => {
+                      document.getElementById("new-arrivals")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                />
+                <MobileNav
+                  label="Track order"
+                  onClick={openTrackOrder}
+                />
+                <MobileNav
+                  label="Account"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    router.push(user ? "/account" : "/login");
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* =====================================================
+            DESKTOP HEADER — intentionally preserved
+        ===================================================== */}
+        <div className="hidden lg:block">
         <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
           <div className="flex min-h-[70px] items-center gap-4">
             {/* LOGO */}
@@ -900,11 +1142,11 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
             {/* DESKTOP NAVIGATION */}
 
-            <nav className="ml-4 hidden items-center gap-6 lg:flex">
-              <button type="button" onClick={() => router.push("/products")} className="text-xs font-medium text-white transition-colors hover:text-violet-300">Shop</button>
-              <button type="button" onClick={() => document.getElementById("categories")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="group flex items-center gap-1.5 text-xs text-white/45 transition-colors hover:text-white">Categories <ChevronDown /></button>
-              <button type="button" onClick={() => document.getElementById("deals")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="text-xs text-white/40 transition-colors hover:text-white">Deals</button>
-              <button type="button" onClick={() => document.getElementById("new-arrivals")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="text-xs text-white/40 transition-colors hover:text-white">New arrivals</button>
+            <nav className="ml-4 hidden shrink-0 items-center gap-5 lg:flex">
+              <button type="button" onClick={() => router.push("/products")} className="shrink-0 whitespace-nowrap text-xs font-medium text-white transition-colors hover:text-violet-300">Shop</button>
+              <button type="button" onClick={() => document.getElementById("categories")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-white/45 transition-colors hover:text-white">Categories <ChevronDown /></button>
+              <button type="button" onClick={() => document.getElementById("deals")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="shrink-0 whitespace-nowrap text-xs text-white/40 transition-colors hover:text-white">Deals</button>
+              <button type="button" onClick={() => document.getElementById("new-arrivals")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="shrink-0 whitespace-nowrap text-xs text-white/40 transition-colors hover:text-white">New arrivals</button>
             </nav>
 
             {/* SEARCH */}
@@ -914,7 +1156,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
               onBlur={() => {
                 window.setTimeout(() => setSearchFocused(false), 140);
               }}
-              className="relative ml-auto hidden w-full max-w-[390px] md:block lg:ml-auto"
+              className="relative ml-auto hidden w-full max-w-[360px] md:block lg:ml-auto"
             >
               <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-white/35">
                 <SearchIcon />
@@ -1006,6 +1248,20 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
                 {cartCount > 0 && <Badge>{cartCount}</Badge>}
               </button>
 
+              {/* TRACK ORDER */}
+
+              <button
+                type="button"
+                onClick={openTrackOrder}
+                aria-label="Track order"
+                className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 text-white/50 transition hover:border-violet-500/20 hover:bg-violet-500/[0.06] hover:text-white lg:flex xl:px-3.5"
+              >
+                <OrdersIcon />
+                <span className="hidden text-[10px] font-medium xl:inline">
+                  Track order
+                </span>
+              </button>
+
               {/* =================================================
                   ACCOUNT
               ================================================= */}
@@ -1052,6 +1308,12 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
                           label="My orders"
                           icon={<OrdersIcon />}
                           onClick={() => router.push("/orders")}
+                        />
+
+                        <AccountMenuItem
+                          label="Track an order"
+                          icon={<OrdersIcon />}
+                          onClick={openTrackOrder}
                         />
 
                         <AccountMenuItem
@@ -1174,9 +1436,21 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
             <div className="border-t border-white/[0.06] py-4 lg:hidden">
               <div className="flex flex-col gap-1">
                 <MobileNav label="Shop" onClick={() => { setMenuOpen(false); router.push("/products"); }} />
-                <MobileNav label="Categories" onClick={() => { setMenuOpen(false); document.getElementById("categories")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+                <MobileNav
+                  label="Categories"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.setTimeout(() => {
+                      document.getElementById("categories")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                />
                 <MobileNav label="Deals" onClick={() => { setMenuOpen(false); document.getElementById("deals")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
                 <MobileNav label="New arrivals" onClick={() => { setMenuOpen(false); document.getElementById("new-arrivals")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+                <MobileNav label="Track order" onClick={openTrackOrder} />
 
                 {user ? (
                   <>
@@ -1215,6 +1489,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
             </div>
           )}
         </div>
+        </div>
       </header>
 
       {/* =====================================================
@@ -1224,22 +1499,112 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
           <div
-            className={`relative grid min-h-[570px] items-center gap-10 py-16 transition-all duration-1000 lg:grid-cols-[1fr_0.85fr] lg:py-20 ${
+            className={`relative grid items-center gap-7 py-8 transition-all duration-1000 lg:min-h-[570px] lg:gap-10 lg:grid-cols-[1fr_0.85fr] lg:py-20 ${
               mounted
                 ? "translate-y-0 opacity-100"
                 : "translate-y-5 opacity-0"
             }`}
           >
+            {/* MOBILE HERO VISUAL — REAL HOT PRODUCT CAROUSEL */}
+            <div className="relative order-first lg:hidden">
+              {featuredProducts.length > 0 ? (
+                (() => {
+                  const featured = featuredProducts[featuredIndex] ?? featuredProducts[0];
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/products/${featured.id}`)}
+                        className="group relative block w-full text-left"
+                        aria-label={`View ${featured.name}`}
+                      >
+                        <div className="absolute inset-0 rounded-[28px] bg-violet-600/[0.10] blur-3xl" />
+                        <div
+                          key={featured.id}
+                          className="mobile-featured-slide relative h-[235px] overflow-hidden rounded-[24px] border border-violet-400/[0.16] bg-[#0d0d12] shadow-[0_25px_70px_rgba(0,0,0,0.42)]"
+                        >
+                          {featured.image ? (
+                            <img
+                              src={featured.image}
+                              alt={featured.name}
+                              className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-active:scale-[1.02]"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-500/15 via-[#111116] to-indigo-500/10 text-violet-200/70">
+                              <div className="scale-[2.2]">
+                                <ProductIcon type={featured.icon} />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Full-bleed image with a cinematic readability layer. */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/5" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/25" />
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_36%,rgba(139,92,246,0.12),transparent_40%)]" />
+
+                          <div className="absolute left-4 top-4 rounded-full border border-white/[0.12] bg-black/35 px-2.5 py-1 text-[8px] font-semibold uppercase tracking-[0.16em] text-white/75 backdrop-blur-xl">
+                            {featured.badge || "HOT NOW"}
+                          </div>
+
+                          <div className="absolute bottom-5 left-5 max-w-[67%]">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-violet-200/75">
+                              Featured
+                            </p>
+                            <p className="mt-1 line-clamp-2 text-[15px] font-semibold leading-5 text-white drop-shadow-lg">
+                              {featured.name}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2 text-[9px] text-white/70">
+                              <span className="text-amber-300">★ {featured.rating.toFixed(1)}</span>
+                              <span className="text-white/35">({featured.reviews} reviews)</span>
+                            </div>
+                          </div>
+
+                          <div className="absolute bottom-5 right-5 text-right drop-shadow-lg">
+                            <p className="text-sm font-semibold text-white">{formatMoney(featured.price)}</p>
+                            {featured.oldPrice ? (
+                              <p className="text-[8px] text-white/45 line-through">
+                                {formatMoney(featured.oldPrice)}
+                              </p>
+                            ) : (
+                              <p className="text-[8px] text-white/55">Free shipping</p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+
+                      <div className="mt-3 flex justify-center gap-1.5" aria-label="Featured products">
+                        {featuredProducts.map((product, index) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => setFeaturedIndex(index)}
+                            aria-label={`Show ${product.name}`}
+                            className={`h-1.5 rounded-full transition-all ${
+                              index === featuredIndex
+                                ? "w-5 bg-violet-400"
+                                : "w-1.5 bg-white/20"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div className="h-[235px] animate-pulse rounded-[24px] border border-white/[0.08] bg-white/[0.025]" />
+              )}
+            </div>
+
             {/* HERO COPY */}
 
-            <div className="relative z-10 max-w-2xl">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45 backdrop-blur-xl">
+            <div className="relative z-10 max-w-2xl lg:max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full lg:mb-6 border border-white/10 bg-white/[0.035] px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/45 backdrop-blur-xl">
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.9)]" />
 
                 The next generation marketplace
               </div>
 
-              <h1 className="text-5xl font-semibold leading-[0.96] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[84px]">
+              <h1 className="text-[42px] font-semibold leading-[0.96] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[84px]">
                 Discover
                 <br />
 
@@ -1248,12 +1613,12 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
                 </span>
               </h1>
 
-              <p className="mt-7 max-w-lg text-sm leading-7 text-white/40 sm:text-[15px]">
+              <p className="mt-5 max-w-lg text-[13px] leading-6 text-white/40 sm:text-[15px] lg:mt-7 lg:leading-7">
                 Exceptional products. Independent sellers. A shopping
                 experience designed around the things worth discovering.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-col gap-2.5 sm:flex-row lg:mt-8 lg:gap-3">
                 <button
                   onClick={() =>
                     resultsRef.current?.scrollIntoView({
@@ -1287,7 +1652,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
                 </button>
               </div>
 
-              <div className="mt-10 flex flex-wrap items-center gap-6 text-[10px] text-white/30">
+              <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3 text-[9px] text-white/30 lg:mt-10 lg:gap-6 lg:text-[10px]">
                 <TrustItem icon="✓" label="Verified sellers" />
                 <TrustItem icon="✓" label="Secure checkout" />
                 <TrustItem icon="✓" label="Fast delivery" />
@@ -1387,7 +1752,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
 <section
   id="categories"
-  className="border-y border-white/[0.05] bg-white/[0.012]"
+  className="scroll-mt-24 border-y border-white/[0.05] bg-white/[0.012]"
 >
   <div className="mx-auto max-w-[1440px] px-5 py-16 sm:px-8 lg:px-12">
     <SectionHeading
@@ -1398,7 +1763,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
       onAction={() => router.push("/products")}
     />
 
-    <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] lg:mt-8 lg:grid lg:grid-cols-6 lg:overflow-visible lg:pb-0">
       {categoriesLoading ? (
         Array.from({ length: 6 }).map((_, index) => (
           <div
@@ -1426,7 +1791,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
                   )}`
                 )
               }
-              className={`group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-br ${presentation.gradient} p-5 text-left transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.14] hover:bg-white/[0.045]`}
+              className={`group relative min-w-[116px] shrink-0 overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-br ${presentation.gradient} p-4 text-left transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.14] hover:bg-white/[0.045] lg:min-w-0 lg:shrink lg:p-5`}
               style={{
                 animationDelay: `${index * 70}ms`,
               }}
@@ -1468,7 +1833,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
       <section
         ref={resultsRef}
-        id="new-arrivals"
+        id="trending-products"
         className="scroll-mt-24 mx-auto max-w-[1440px] px-5 py-20 sm:px-8 lg:px-12"
       >
         {activeSearch ? (
@@ -1617,6 +1982,47 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
       </section>
 
       {/* =====================================================
+          NEW ARRIVALS
+      ===================================================== */}
+      <section
+        id="new-arrivals"
+        className="scroll-mt-24 border-y border-white/[0.05] bg-white/[0.012]"
+      >
+        <div className="mx-auto max-w-[1440px] px-5 py-20 sm:px-8 lg:px-12">
+          <SectionHeading
+            eyebrow="JUST IN"
+            title="New arrivals"
+            description="Fresh picks worth discovering right now."
+            action="View all products"
+            onAction={() => router.push("/products")}
+          />
+
+          {!productsLoading && !productsError && newArrivalProducts.length > 0 && (
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {newArrivalProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  index={index}
+                  isWishlisted={wishlist.includes(product.id)}
+                  onWishlist={() => toggleWishlist(product.id)}
+                  onAddToCart={addToCart}
+                />
+              ))}
+            </div>
+          )}
+
+          {!productsLoading && !productsError && newArrivalProducts.length === 0 && (
+            <div className="mt-8 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-6 py-14 text-center">
+              <p className="text-xs text-white/35">
+                No new arrivals are available right now.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* =====================================================
           FLASH DEALS
       ===================================================== */}
 
@@ -1650,7 +2056,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              {products.slice(0, 3).map((product) => (
+              {dealProducts.slice(0, 3).map((product) => (
                 <MiniDealCard
                   key={product.id}
                   product={product}
@@ -1783,6 +2189,14 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
       </section>
 
       {/* =====================================================
+          MOBILE BOTTOM NAVIGATION
+      ===================================================== */}
+      <MobileBottomNav
+        cartCount={cartCount}
+        wishlistCount={wishlist.length}
+      />
+
+      {/* =====================================================
           FOOTER
       ===================================================== */}
 
@@ -1891,6 +2305,28 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
           50% {
             background-position: 100% 50%;
+          }
+        }
+
+        @keyframes mobileFeaturedSlideIn {
+          0% {
+            opacity: 0;
+            transform: translate3d(100%, 0, 0);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+
+        .mobile-featured-slide {
+          animation: mobileFeaturedSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mobile-featured-slide {
+            animation: none;
           }
         }
 
@@ -2087,9 +2523,11 @@ function ProductCard({
   index: number;
   isWishlisted: boolean;
   onWishlist: () => void;
-  onAddToCart: (productId: string) => void;
+  onAddToCart: (productId: string) => Promise<boolean>;
 }) {
   const router = useRouter();
+  const [quickAdded, setQuickAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
   return (
     <article
       onClick={() => router.push(`/products/${product.id}`)}
@@ -2156,13 +2594,34 @@ function ProductCard({
         </button>
 
         <button
-          onClick={(e) => {
+          type="button"
+          onClick={async (e) => {
             e.stopPropagation();
-            onAddToCart(product.id);
+            if (adding) return;
+            if (quickAdded) return;
+
+            setAdding(true);
+            const success = await onAddToCart(product.id);
+            setAdding(false);
+            if (success) {
+              setQuickAdded(true);
+            }
           }}
-          className="absolute bottom-3 left-3 right-3 translate-y-2 rounded-xl border border-white/10 bg-black/70 py-2.5 text-[9px] font-semibold text-white opacity-0 backdrop-blur-xl transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-black/85"
+          aria-label={quickAdded ? `${product.name} added to cart` : `Quick add ${product.name} to cart`}
+          title={quickAdded ? "Added to cart" : "Quick add to cart"}
+          className={`absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-xl transition-all duration-300 sm:h-9 sm:w-9 ${
+            quickAdded
+              ? "border-violet-400/40 bg-violet-500/25 text-violet-200"
+              : "border-white/10 bg-black/70 text-white/80 hover:border-violet-400/40 hover:bg-violet-500/20 hover:text-white"
+          }`}
         >
-          Add to cart
+          {adding ? (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          ) : quickAdded ? (
+            <span className="text-sm font-bold">✓</span>
+          ) : (
+            <span className="text-lg font-light leading-none">+</span>
+          )}
         </button>
       </div>
 
@@ -2242,6 +2701,108 @@ function MiniDealCard({ product }: { product: Product }) {
         </span>
       </div>
     </div>
+  );
+}
+
+/* =========================================================
+   MOBILE BOTTOM NAVIGATION
+========================================================= */
+
+function MobileBottomNav({
+  cartCount,
+  wishlistCount,
+}: {
+  cartCount: number;
+  wishlistCount: number;
+}) {
+  const router = useRouter();
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-[70] border-t border-white/[0.08] bg-[#070709]/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 backdrop-blur-2xl lg:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-5">
+        <MobileBottomItem
+          label="Home"
+          icon={<HomeIcon />}
+          active
+          onClick={() => router.push("/")}
+        />
+        <MobileBottomItem
+          label="Shop"
+          icon={<CartIcon />}
+          onClick={() => router.push("/products")}
+        />
+        <MobileBottomItem
+          label="Wishlist"
+          icon={<HeartIcon />}
+          badge={wishlistCount}
+          onClick={() => router.push("/wishlist")}
+        />
+        <MobileBottomItem
+          label="Cart"
+          icon={<CartIcon />}
+          badge={cartCount}
+          onClick={() => router.push("/cart")}
+        />
+        <MobileBottomItem
+          label="Account"
+          icon={<UserIcon />}
+          onClick={() => router.push("/account")}
+        />
+      </div>
+    </nav>
+  );
+}
+
+function MobileBottomItem({
+  label,
+  icon,
+  active = false,
+  badge = 0,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  badge?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl transition active:scale-95 ${
+        active ? "text-violet-300" : "text-white/40 hover:text-white"
+      }`}
+    >
+      <span className="relative">
+        {icon}
+        {badge > 0 && (
+          <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-500 px-1 text-[8px] font-bold text-white shadow-lg shadow-violet-500/30">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </span>
+      <span className="text-[9px] font-medium">{label}</span>
+    </button>
+  );
+}
+
+/* =========================================================
+   HOME ICON
+========================================================= */
+
+function HomeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="h-4 w-4"
+    >
+      <path d="m3.5 10.5 8.5-7 8.5 7" />
+      <path d="M5.5 9.5V20h13V9.5M9.5 20v-6h5v6" />
+    </svg>
   );
 }
 
