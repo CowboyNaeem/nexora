@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { ChangeEvent } from "react";
 
 type PaymentMethod =
   | "CASH_ON_DELIVERY"
@@ -64,15 +63,23 @@ type MobileCheckoutProps = {
   setCity: (value: string) => void;
   setAddress: (value: string) => void;
   setPostalCode: (value: string) => void;
+
   setPaymentMethod: (
     value: PaymentMethod
   ) => void;
+
   setMobileProvider: (
     value: MobileProvider
   ) => void;
-  setTransactionId: (value: string) => void;
 
-  handleDivisionChange: (value: string) => void;
+  setTransactionId: (
+    value: string
+  ) => void;
+
+  handleDivisionChange: (
+    value: string
+  ) => void;
+
   placeOrder: () => void;
 };
 
@@ -81,6 +88,69 @@ const inputClass =
 
 const selectClass =
   "w-full rounded-2xl border border-white/[0.08] bg-[#111111] px-4 py-3.5 text-sm text-white outline-none transition focus:border-violet-400/50";
+
+function getItemPrice(item: CartItem) {
+  if (
+    item.variant &&
+    item.variant.price !== null
+  ) {
+    const value = Number(
+      item.variant.price
+    );
+
+    return Number.isFinite(value)
+      ? value
+      : 0;
+  }
+
+  const value = Number(
+    item.product.price
+  );
+
+  return Number.isFinite(value)
+    ? value
+    : 0;
+}
+
+function providerName(
+  provider: MobileProvider
+) {
+  if (provider === "BKASH") {
+    return "bKash";
+  }
+
+  if (provider === "NAGAD") {
+    return "Nagad";
+  }
+
+  return "Rocket";
+}
+
+function providerNumber(
+  provider: MobileProvider
+) {
+  if (provider === "BKASH") {
+    return (
+      process.env
+        .NEXT_PUBLIC_BKASH_NUMBER ||
+      "Not configured"
+    );
+  }
+
+  if (provider === "NAGAD") {
+    return (
+      process.env
+        .NEXT_PUBLIC_NAGAD_NUMBER ||
+      "Not configured"
+    );
+  }
+
+  return (
+    process.env
+      .NEXT_PUBLIC_ROCKET_NUMBER ||
+    "Not configured"
+  );
+}
 
 export default function MobileCheckout({
   items,
@@ -114,6 +184,7 @@ export default function MobileCheckout({
   setCity,
   setAddress,
   setPostalCode,
+
   setPaymentMethod,
   setMobileProvider,
   setTransactionId,
@@ -123,6 +194,7 @@ export default function MobileCheckout({
 }: MobileCheckoutProps) {
   return (
     <main className="min-h-screen bg-[#070709] pb-32 text-white">
+
       <div className="mx-auto w-full max-w-md px-5 pb-8 pt-5">
 
         {/* =====================================================
@@ -130,6 +202,7 @@ export default function MobileCheckout({
         ===================================================== */}
 
         <header className="flex items-center justify-between">
+
           <Link
             href="/cart"
             className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] text-lg text-white/65 transition active:scale-95"
@@ -139,6 +212,7 @@ export default function MobileCheckout({
           </Link>
 
           <div className="text-center">
+
             <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-violet-400">
               NEXORA
             </p>
@@ -146,11 +220,13 @@ export default function MobileCheckout({
             <h1 className="mt-1 text-[17px] font-semibold tracking-tight">
               Checkout
             </h1>
+
           </div>
 
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] text-sm text-emerald-400">
             ✓
           </div>
+
         </header>
 
         {/* =====================================================
@@ -158,9 +234,11 @@ export default function MobileCheckout({
         ===================================================== */}
 
         <section className="mt-7">
-          <div className="flex items-center justify-between">
 
-            <div className="flex items-center gap-2">
+          <div className="flex items-center">
+
+            <div className="flex shrink-0 items-center gap-2">
+
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold">
                 1
               </span>
@@ -168,11 +246,13 @@ export default function MobileCheckout({
               <span className="text-[10px] font-medium text-white/70">
                 Shipping
               </span>
+
             </div>
 
             <div className="mx-2 h-px flex-1 bg-violet-500/30" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-bold text-violet-300">
                 2
               </span>
@@ -180,11 +260,13 @@ export default function MobileCheckout({
               <span className="text-[10px] font-medium text-white/50">
                 Payment
               </span>
+
             </div>
 
             <div className="mx-2 h-px flex-1 bg-white/[0.08]" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+
               <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] text-[10px] font-bold text-white/35">
                 3
               </span>
@@ -192,8 +274,11 @@ export default function MobileCheckout({
               <span className="text-[10px] font-medium text-white/35">
                 Review
               </span>
+
             </div>
+
           </div>
+
         </section>
 
         {/* =====================================================
@@ -201,6 +286,7 @@ export default function MobileCheckout({
         ===================================================== */}
 
         <section className="mt-8">
+
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-400">
             COMPLETE YOUR ORDER
           </p>
@@ -210,9 +296,9 @@ export default function MobileCheckout({
           </h2>
 
           <p className="mt-2 text-xs leading-6 text-white/35">
-            Enter your delivery details and choose your
-            preferred payment method.
+            Enter your delivery details and choose your preferred payment method.
           </p>
+
         </section>
 
         {/* =====================================================
@@ -221,15 +307,19 @@ export default function MobileCheckout({
 
         {error && (
           <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-4">
+
             <div className="flex gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-xs text-red-400">
+
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-xs font-semibold text-red-400">
                 !
               </div>
 
               <p className="text-xs leading-5 text-red-300">
                 {error}
               </p>
+
             </div>
+
           </div>
         )}
 
@@ -243,11 +333,12 @@ export default function MobileCheckout({
 
             <div className="flex items-center gap-3">
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-violet-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-xs font-semibold text-violet-300">
                 01
               </div>
 
               <div>
+
                 <p className="text-[10px] uppercase tracking-[0.18em] text-violet-400">
                   Shipping
                 </p>
@@ -255,16 +346,19 @@ export default function MobileCheckout({
                 <h3 className="mt-1 text-base font-semibold">
                   Delivery information
                 </h3>
+
               </div>
 
             </div>
+
           </div>
 
           <div className="space-y-4 p-5">
 
-            {/* Full name */}
+            {/* Name */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Full name
               </label>
@@ -272,17 +366,21 @@ export default function MobileCheckout({
               <input
                 value={name}
                 onChange={(event) =>
-                  setName(event.target.value)
+                  setName(
+                    event.target.value
+                  )
                 }
                 placeholder="Your full name"
                 autoComplete="name"
                 className={inputClass}
               />
+
             </div>
 
             {/* Email */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Email address
               </label>
@@ -304,11 +402,13 @@ export default function MobileCheckout({
               <p className="mt-2 text-[9px] text-white/25">
                 Used for order updates & tracking.
               </p>
+
             </div>
 
             {/* Phone */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Phone number
               </label>
@@ -316,7 +416,9 @@ export default function MobileCheckout({
               <input
                 value={phone}
                 onChange={(event) =>
-                  setPhone(event.target.value)
+                  setPhone(
+                    event.target.value
+                  )
                 }
                 placeholder="01XXXXXXXXX"
                 type="tel"
@@ -326,12 +428,12 @@ export default function MobileCheckout({
                 className={inputClass}
               />
 
-              
             </div>
 
             {/* Division */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Division
               </label>
@@ -345,6 +447,7 @@ export default function MobileCheckout({
                 }
                 className={selectClass}
               >
+
                 <option value="">
                   Select division
                 </option>
@@ -359,12 +462,15 @@ export default function MobileCheckout({
                     </option>
                   )
                 )}
+
               </select>
+
             </div>
 
             {/* District */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 District
               </label>
@@ -372,11 +478,14 @@ export default function MobileCheckout({
               <select
                 value={city}
                 onChange={(event) =>
-                  setCity(event.target.value)
+                  setCity(
+                    event.target.value
+                  )
                 }
                 disabled={!division}
                 className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-35`}
               >
+
                 <option value="">
                   {division
                     ? "Select district"
@@ -393,12 +502,15 @@ export default function MobileCheckout({
                     </option>
                   )
                 )}
+
               </select>
+
             </div>
 
             {/* Address */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Full address
               </label>
@@ -406,18 +518,22 @@ export default function MobileCheckout({
               <textarea
                 value={address}
                 onChange={(event) =>
-                  setAddress(event.target.value)
+                  setAddress(
+                    event.target.value
+                  )
                 }
                 placeholder="House / Flat, Road, Area, Thana..."
                 rows={4}
                 autoComplete="street-address"
                 className={`${inputClass} resize-none`}
               />
+
             </div>
 
             {/* Postal */}
 
             <div>
+
               <label className="mb-2 block text-[11px] font-medium text-white/55">
                 Postal code
                 <span className="ml-2 text-[9px] text-white/25">
@@ -434,13 +550,16 @@ export default function MobileCheckout({
                 }
                 placeholder="1205"
                 inputMode="numeric"
+                autoComplete="postal-code"
                 className={inputClass}
               />
+
             </div>
 
             {/* Country */}
 
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+
               <p className="text-[9px] uppercase tracking-[0.16em] text-white/25">
                 Country
               </p>
@@ -448,8 +567,11 @@ export default function MobileCheckout({
               <p className="mt-2 text-sm text-white/65">
                 🇧🇩 Bangladesh
               </p>
+
             </div>
+
           </div>
+
         </section>
 
         {/* =====================================================
@@ -462,11 +584,12 @@ export default function MobileCheckout({
 
             <div className="flex items-center gap-3">
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-violet-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-xs font-semibold text-violet-300">
                 02
               </div>
 
               <div>
+
                 <p className="text-[10px] uppercase tracking-[0.18em] text-violet-400">
                   Payment
                 </p>
@@ -474,9 +597,11 @@ export default function MobileCheckout({
                 <h3 className="mt-1 text-base font-semibold">
                   Choose payment
                 </h3>
+
               </div>
 
             </div>
+
           </div>
 
           <div className="p-5">
@@ -489,6 +614,7 @@ export default function MobileCheckout({
                 setPaymentMethod(
                   "CASH_ON_DELIVERY"
                 );
+
                 setTransactionId("");
               }}
               className={`w-full rounded-2xl border p-4 text-left transition active:scale-[0.99] ${
@@ -498,6 +624,7 @@ export default function MobileCheckout({
                   : "border-white/[0.07] bg-white/[0.02]"
               }`}
             >
+
               <div className="flex items-center gap-3">
 
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/[0.08] text-lg">
@@ -505,6 +632,7 @@ export default function MobileCheckout({
                 </div>
 
                 <div className="min-w-0 flex-1">
+
                   <p className="text-sm font-medium">
                     Cash on Delivery
                   </p>
@@ -512,10 +640,11 @@ export default function MobileCheckout({
                   <p className="mt-1 text-[10px] text-white/35">
                     Pay when your order arrives.
                   </p>
+
                 </div>
 
                 <div
-                  className={`h-5 w-5 rounded-full border ${
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                     paymentMethod ===
                     "CASH_ON_DELIVERY"
                       ? "border-violet-400 bg-violet-400"
@@ -524,11 +653,12 @@ export default function MobileCheckout({
                 >
                   {paymentMethod ===
                     "CASH_ON_DELIVERY" && (
-                    <div className="m-1 h-2.5 w-2.5 rounded-full bg-[#070709]" />
+                    <div className="h-2 w-2 rounded-full bg-[#070709]" />
                   )}
                 </div>
 
               </div>
+
             </button>
 
             {/* Mobile Banking */}
@@ -547,6 +677,7 @@ export default function MobileCheckout({
                   : "border-white/[0.07] bg-white/[0.02]"
               }`}
             >
+
               <div className="flex items-center gap-3">
 
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/[0.1] text-lg">
@@ -554,6 +685,7 @@ export default function MobileCheckout({
                 </div>
 
                 <div className="min-w-0 flex-1">
+
                   <p className="text-sm font-medium">
                     Mobile Banking
                   </p>
@@ -561,10 +693,11 @@ export default function MobileCheckout({
                   <p className="mt-1 text-[10px] text-white/35">
                     bKash, Nagad or Rocket
                   </p>
+
                 </div>
 
                 <div
-                  className={`h-5 w-5 rounded-full border ${
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                     paymentMethod ===
                     "MOBILE_BANKING"
                       ? "border-violet-400 bg-violet-400"
@@ -573,14 +706,15 @@ export default function MobileCheckout({
                 >
                   {paymentMethod ===
                     "MOBILE_BANKING" && (
-                    <div className="m-1 h-2.5 w-2.5 rounded-full bg-[#070709]" />
+                    <div className="h-2 w-2 rounded-full bg-[#070709]" />
                   )}
                 </div>
 
               </div>
+
             </button>
 
-            {/* Mobile banking details */}
+            {/* Mobile Banking Details */}
 
             {paymentMethod ===
               "MOBILE_BANKING" && (
@@ -598,36 +732,35 @@ export default function MobileCheckout({
                       "NAGAD",
                       "ROCKET",
                     ] as MobileProvider[]
-                  ).map((provider) => (
-                    <button
-                      key={provider}
-                      type="button"
-                      onClick={() => {
-                        setMobileProvider(
+                  ).map(
+                    (provider) => (
+                      <button
+                        key={provider}
+                        type="button"
+                        onClick={() => {
+                          setMobileProvider(
+                            provider
+                          );
+
+                          setTransactionId("");
+                        }}
+                        className={`rounded-xl border px-2 py-3 text-[11px] font-medium transition active:scale-95 ${
+                          mobileProvider ===
                           provider
-                        );
-                        setTransactionId("");
-                      }}
-                      className={`rounded-xl border px-2 py-3 text-[11px] font-medium transition active:scale-95 ${
-                        mobileProvider ===
-                        provider
-                          ? "border-violet-400 bg-violet-500/10 text-white"
-                          : "border-white/[0.07] bg-white/[0.02] text-white/45"
-                      }`}
-                    >
-                      {provider ===
-                      "BKASH"
-                        ? "bKash"
-                        : provider ===
-                            "NAGAD"
-                          ? "Nagad"
-                          : "Rocket"}
-                    </button>
-                  ))}
+                            ? "border-violet-400 bg-violet-500/10 text-white"
+                            : "border-white/[0.07] bg-white/[0.02] text-white/45"
+                        }`}
+                      >
+                        {providerName(
+                          provider
+                        )}
+                      </button>
+                    )
+                  )}
 
                 </div>
 
-                {/* Payment instruction */}
+                {/* Instructions */}
 
                 <div className="mt-4 rounded-2xl border border-white/[0.07] bg-black/20 p-4">
 
@@ -637,14 +770,10 @@ export default function MobileCheckout({
 
                   <p className="mt-2 text-[10px] leading-5 text-white/35">
                     Send the exact amount using{" "}
-                    <span className="text-violet-300">
-                      {mobileProvider ===
-                      "BKASH"
-                        ? "bKash"
-                        : mobileProvider ===
-                            "NAGAD"
-                          ? "Nagad"
-                          : "Rocket"}
+                    <span className="font-medium text-violet-300">
+                      {providerName(
+                        mobileProvider
+                      )}
                     </span>
                     .
                   </p>
@@ -667,24 +796,16 @@ export default function MobileCheckout({
                       Send Money to
                     </p>
 
-                    <p className="mt-1 text-sm font-semibold text-violet-300">
-                      {mobileProvider ===
-                      "BKASH"
-                        ? process.env
-                            .NEXT_PUBLIC_BKASH_NUMBER
-                        : mobileProvider ===
-                            "NAGAD"
-                          ? process.env
-                              .NEXT_PUBLIC_NAGAD_NUMBER
-                          : process.env
-                              .NEXT_PUBLIC_ROCKET_NUMBER}
+                    <p className="mt-1 break-all text-sm font-semibold text-violet-300">
+                      {providerNumber(
+                        mobileProvider
+                      )}
                     </p>
 
                   </div>
 
                   <p className="mt-3 text-[9px] leading-5 text-white/25">
-                    After completing the payment,
-                    enter your transaction ID below.
+                    After completing the payment, enter your transaction ID below.
                   </p>
 
                 </div>
@@ -705,11 +826,16 @@ export default function MobileCheckout({
                     onChange={(event) =>
                       setTransactionId(
                         event.target.value
-                          .replace(/\s+/g, "")
+                          .replace(
+                            /\s+/g,
+                            ""
+                          )
                           .toUpperCase()
                       )
                     }
-                    placeholder={`Enter ${mobileProvider} transaction ID`}
+                    placeholder={`Enter ${providerName(
+                      mobileProvider
+                    )} transaction ID`}
                     autoComplete="off"
                     className={inputClass}
                   />
@@ -718,7 +844,9 @@ export default function MobileCheckout({
 
               </div>
             )}
+
           </div>
+
         </section>
 
         {/* =====================================================
@@ -731,11 +859,12 @@ export default function MobileCheckout({
 
             <div className="flex items-center gap-3">
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-violet-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/[0.1] text-xs font-semibold text-violet-300">
                 03
               </div>
 
               <div>
+
                 <p className="text-[10px] uppercase tracking-[0.18em] text-violet-400">
                   Review
                 </p>
@@ -743,35 +872,29 @@ export default function MobileCheckout({
                 <h3 className="mt-1 text-base font-semibold">
                   Your order
                 </h3>
+
               </div>
 
             </div>
+
           </div>
 
           <div className="p-5">
 
-            {/* Items */}
-
             <div className="space-y-4">
 
               {items.map((item) => {
+
                 const price =
-                  item.variant &&
-                  item.variant.price !== null
-                    ? Number(
-                        item.variant.price
-                      )
-                    : Number(
-                        item.product.price
-                      );
+                  getItemPrice(item);
 
                 const image =
-                  item.product.images &&
-                  item.product.images.length >
-                    0
-                    ? item.product.images[0]
-                        .url
-                    : null;
+                  item.product.images?.[0]
+                    ?.url || null;
+
+                const itemTotal =
+                  price *
+                  item.quantity;
 
                 return (
                   <div
@@ -784,9 +907,7 @@ export default function MobileCheckout({
                       {image ? (
                         <img
                           src={image}
-                          alt={
-                            item.product.name
-                          }
+                          alt={item.product.name}
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -821,11 +942,7 @@ export default function MobileCheckout({
                     </div>
 
                     <p className="text-xs font-semibold">
-                      $
-                      {(
-                        price *
-                        item.quantity
-                      ).toFixed(2)}
+                      ${itemTotal.toFixed(2)}
                     </p>
 
                   </div>
@@ -892,9 +1009,11 @@ export default function MobileCheckout({
                 </div>
 
               </div>
+
             </div>
 
           </div>
+
         </section>
 
         {/* =====================================================
@@ -904,6 +1023,7 @@ export default function MobileCheckout({
         <div className="mt-5 grid grid-cols-3 gap-2">
 
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-2 py-3 text-center">
+
             <p className="text-sm text-violet-300">
               ◇
             </p>
@@ -915,9 +1035,11 @@ export default function MobileCheckout({
             <p className="mt-0.5 text-[8px] text-white/20">
               Payment
             </p>
+
           </div>
 
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-2 py-3 text-center">
+
             <p className="text-sm text-violet-300">
               ↗
             </p>
@@ -929,9 +1051,11 @@ export default function MobileCheckout({
             <p className="mt-0.5 text-[8px] text-white/20">
               Delivery
             </p>
+
           </div>
 
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-2 py-3 text-center">
+
             <p className="text-sm text-violet-300">
               ✓
             </p>
@@ -943,6 +1067,7 @@ export default function MobileCheckout({
             <p className="mt-0.5 text-[8px] text-white/20">
               Checkout
             </p>
+
           </div>
 
         </div>
@@ -950,7 +1075,7 @@ export default function MobileCheckout({
       </div>
 
       {/* =====================================================
-          FIXED MOBILE CHECKOUT BAR
+          FIXED CHECKOUT BAR
       ===================================================== */}
 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.08] bg-[#070709]/95 px-4 pb-[env(safe-area-inset-bottom)] pt-3 backdrop-blur-xl">
@@ -975,13 +1100,27 @@ export default function MobileCheckout({
             disabled={placingOrder}
             className="flex h-12 flex-[1.55] items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 text-xs font-semibold text-white shadow-lg shadow-violet-500/15 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {placingOrder
-              ? "Placing order..."
-              : "Place Order →"}
+
+            {placingOrder ? (
+              <span className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Placing order...
+              </span>
+            ) : (
+              <>
+                Place Order
+                <span className="ml-2">
+                  →
+                </span>
+              </>
+            )}
+
           </button>
 
         </div>
+
       </div>
+
     </main>
   );
 }

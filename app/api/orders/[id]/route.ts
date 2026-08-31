@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { cookies } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
@@ -10,7 +9,6 @@ import {
 } from "@/lib/auth";
 
 const GUEST_CART_COOKIE = "nexora_guest_id";
-
 const ORDER_TRACKING_COOKIE = "nexora_order_tracking";
 
 type OrderOwner =
@@ -61,7 +59,7 @@ async function getOrderOwner(): Promise<OrderOwner | null> {
   }
 
   // ----------------------------------------------------------
-  // Guest browser
+  // Guest customer
   // ----------------------------------------------------------
 
   const guestId =
@@ -134,17 +132,29 @@ async function getOrderAccessConditions(
     | { id: string }
   > = [];
 
+  // ----------------------------------------------------------
+  // Logged-in customer ownership
+  // ----------------------------------------------------------
+
   if (owner?.type === "user") {
     ownershipConditions.push({
       userId: owner.userId,
     });
   }
 
+  // ----------------------------------------------------------
+  // Guest ownership
+  // ----------------------------------------------------------
+
   if (owner?.type === "guest") {
     ownershipConditions.push({
       guestId: owner.guestId,
     });
   }
+
+  // ----------------------------------------------------------
+  // Verified order tracking access
+  // ----------------------------------------------------------
 
   if (
     trackingAccess?.orderIds.includes(id)
@@ -170,6 +180,11 @@ async function getOrderAccessConditions(
 // 1. Logged-in customer → own order
 // 2. Guest browser → own guest order
 // 3. Recently verified Email + Phone → tracked order
+//
+// IMPORTANT:
+// Order items include their related Product, Product Images,
+// and Variant so both desktop and mobile order details pages
+// can render complete product information.
 // ============================================================
 
 export async function GET(
@@ -232,13 +247,45 @@ export async function GET(
           id,
           OR: ownershipConditions,
         },
+
         include: {
+          // --------------------------------------------------
+          // Order items
+          //
+          // Product + images are included here so the frontend
+          // can display the real product image.
+          // --------------------------------------------------
+
           items: {
             orderBy: {
               createdAt: "asc",
             },
+
+            include: {
+              product: {
+                include: {
+                  images: {
+                    orderBy: {
+                      sortOrder: "asc",
+                    },
+                  },
+                },
+              },
+
+              variant: true,
+            },
           },
+
+          // --------------------------------------------------
+          // Payment information
+          // --------------------------------------------------
+
           payment: true,
+
+          // --------------------------------------------------
+          // Shipment information
+          // --------------------------------------------------
+
           shipment: true,
         },
       });
@@ -374,6 +421,7 @@ export async function PATCH(
           id,
           OR: ownershipConditions,
         },
+
         include: {
           payment: true,
           shipment: true,
@@ -465,6 +513,7 @@ export async function PATCH(
               where: {
                 id: order.id,
               },
+
               include: {
                 payment: true,
               },
@@ -512,9 +561,11 @@ export async function PATCH(
               where: {
                 id: currentOrder.id,
               },
+
               data: {
                 status: "CANCELLED",
               },
+
               select: {
                 id: true,
                 orderNumber: true,
@@ -537,6 +588,7 @@ export async function PATCH(
                 id:
                   currentOrder.payment.id,
               },
+
               data: {
                 status:
                   "CANCELLED",

@@ -19,6 +19,14 @@ type Store = {
   name: string;
 };
 
+type ProductImage = {
+  id: string;
+  url: string;
+  altText?: string | null;
+  sortOrder: number;
+  isPrimary: boolean;
+};
+
 type Product = {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ type Product = {
   category?: Category | null;
   brand?: Brand | null;
   store?: Store | null;
+  images?: ProductImage[];
   inventory?: {
     quantity: number;
     reserved: number;
@@ -60,6 +69,9 @@ export default function EditProductPage() {
   const [compareAtPrice, setCompareAtPrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
   const [status, setStatus] = useState("DRAFT");
+
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -143,6 +155,11 @@ export default function EditProductPage() {
         );
 
         setStatus(loadedProduct.status || "DRAFT");
+        setImages(
+          (loadedProduct.images || []).sort(
+            (a, b) => a.sortOrder - b.sortOrder
+          )
+        );
 
         setCategories(categoriesData.categories || []);
         setBrands(brandsData.brands || []);
@@ -162,6 +179,115 @@ export default function EditProductPage() {
 
     loadData();
   }, [id]);
+
+  async function handleImageChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const files = Array.from(event.target.files || []);
+
+    if (files.length === 0) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const invalidFile = files.find(
+      (file) => !allowedTypes.includes(file.type)
+    );
+
+    if (invalidFile) {
+      setError("Only JPG, PNG and WEBP images are allowed.");
+      event.target.value = "";
+      return;
+    }
+
+    const oversizedFile = files.find(
+      (file) => file.size > 10 * 1024 * 1024
+    );
+
+    if (oversizedFile) {
+      setError(`"${oversizedFile.name}" is larger than 10MB.`);
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingImages(true);
+      setError("");
+
+      const uploadedImages: ProductImage[] = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/admin/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success || !data.url) {
+          throw new Error(
+            data.message || `Failed to upload ${file.name}`
+          );
+        }
+
+        uploadedImages.push({
+          id: `new-${crypto.randomUUID()}`,
+          url: data.url,
+          altText: name || file.name,
+          sortOrder: images.length + uploadedImages.length,
+          isPrimary: images.length === 0 && uploadedImages.length === 0,
+        });
+      }
+
+      setImages((current) => {
+        const next = [...current, ...uploadedImages];
+        return next.map((image, index) => ({
+          ...image,
+          sortOrder: index,
+          isPrimary: index === 0,
+        }));
+      });
+    } catch (err) {
+      console.error("Product image upload error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to upload product images"
+      );
+    } finally {
+      setUploadingImages(false);
+      event.target.value = "";
+    }
+  }
+
+  function removeImage(imageId: string) {
+    setImages((current) => {
+      const next = current.filter((image) => image.id !== imageId);
+
+      return next.map((image, index) => ({
+        ...image,
+        sortOrder: index,
+        isPrimary: index === 0,
+      }));
+    });
+  }
+
+  function setPrimaryImage(imageId: string) {
+    setImages((current) => {
+      const primary = current.find((image) => image.id === imageId);
+      const others = current.filter((image) => image.id !== imageId);
+
+      if (!primary) return current;
+
+      return [primary, ...others].map((image, index) => ({
+        ...image,
+        sortOrder: index,
+        isPrimary: index === 0,
+      }));
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -190,6 +316,7 @@ export default function EditProductPage() {
             compareAtPrice,
             stockQuantity,
             status,
+            images: images.map((image) => image.url),
           }),
         }
       );
@@ -316,6 +443,103 @@ export default function EditProductPage() {
         )}
 
         <form onSubmit={handleSubmit}>
+
+          {/* PRODUCT IMAGES */}
+          <section className="rounded-2xl border border-white/10 bg-[#0d1018] p-6 shadow-2xl shadow-black/20">
+            <div>
+              <h2 className="text-lg font-semibold">Product Images</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Replace, add, remove, and choose the primary product image.
+              </p>
+            </div>
+
+            <label
+              className={`group mt-6 flex min-h-[210px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-6 text-center transition hover:border-violet-500/50 hover:bg-violet-500/[0.03] ${
+                uploadingImages ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={handleImageChange}
+                disabled={uploadingImages}
+                className="hidden"
+              />
+
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
+                {uploadingImages ? (
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-violet-400/30 border-t-violet-400" />
+                ) : (
+                  <UploadIcon />
+                )}
+              </div>
+
+              <h3 className="mt-4 font-semibold text-white">
+                {uploadingImages
+                  ? "Uploading images..."
+                  : "Add product images"}
+              </h3>
+
+              <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                Select one image or hold Ctrl/Cmd to select multiple images.
+              </p>
+
+              <span className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-zinc-300">
+                JPG, PNG or WEBP • Max 10MB each
+              </span>
+            </label>
+
+            {images.length > 0 ? (
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {images.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className={`group relative overflow-hidden rounded-2xl border bg-black/20 ${
+                      image.isPrimary
+                        ? "border-violet-500/60"
+                        : "border-white/10"
+                    }`}
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.altText || `Product image ${index + 1}`}
+                      className="h-40 w-full object-cover"
+                    />
+
+                    {image.isPrimary && (
+                      <span className="absolute left-2 top-2 rounded-md bg-violet-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                        Primary
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => removeImage(image.id)}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/75 text-zinc-300 opacity-0 backdrop-blur transition hover:bg-red-500 hover:text-white group-hover:opacity-100"
+                      aria-label={`Remove image ${index + 1}`}
+                    >
+                      ×
+                    </button>
+
+                    {!image.isPrimary && (
+                      <button
+                        type="button"
+                        onClick={() => setPrimaryImage(image.id)}
+                        className="absolute bottom-2 left-2 rounded-lg border border-white/10 bg-black/75 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 opacity-0 backdrop-blur transition hover:bg-violet-600 hover:text-white group-hover:opacity-100"
+                      >
+                        Make primary
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-white/5 bg-black/10 px-4 py-8 text-center text-sm text-zinc-600">
+                No product images. Add at least one image for a complete catalog listing.
+              </div>
+            )}
+          </section>
 
           {/* BASIC INFORMATION */}
           <section className="rounded-2xl border border-white/10 bg-[#0d1018] p-6 shadow-2xl shadow-black/20">
@@ -510,6 +734,26 @@ export default function EditProductPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 16V4" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M5 20h14" />
+    </svg>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ProductGridSkeleton from "@/components/loading/ProductGridSkeleton";
 
 /* =========================================================
    TYPES
@@ -684,15 +685,11 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
   ======================================================= */
 
   const newArrivalProducts = useMemo(() => {
-    return products
-      .filter((product) => product.badgeType === "new")
-      .sort((a, b) => {
-        const ratingScore = (b.rating || 0) - (a.rating || 0);
-        if (ratingScore !== 0) return ratingScore;
-        return (b.reviews || 0) - (a.reviews || 0);
-      })
-      .slice(0, 8);
-  }, [products]);
+  // /api/products already returns ACTIVE products
+  // ordered by createdAt descending, so the first products
+  // are the newest products added to the store.
+  return products.slice(0, 8);
+}, [products]);
 
   const dealProducts = useMemo(() => {
     const saleProducts = products
@@ -1765,13 +1762,16 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
     <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] lg:mt-8 lg:grid lg:grid-cols-6 lg:overflow-visible lg:pb-0">
       {categoriesLoading ? (
-        Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-[150px] animate-pulse rounded-2xl border border-white/[0.07] bg-white/[0.025]"
-          />
-        ))
-      ) : categories.length > 0 ? (
+  Array.from({ length: 6 }).map((_, index) => (
+    <div
+      key={index}
+      aria-hidden="true"
+      className="relative h-[150px] overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025]"
+    >
+      <div className="absolute inset-0 -translate-x-full animate-skeleton-shimmer bg-gradient-to-r from-transparent via-white/[0.055] to-transparent" />
+    </div>
+  ))
+) : categories.length > 0 ? (
         categories.map((category, index) => {
           const presentation =
             CATEGORY_PRESENTATION[category.slug] ?? {
@@ -1891,23 +1891,8 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
         {/* PRODUCTS */}
 
         {productsLoading && (
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.018]"
-              >
-                <div className="aspect-square animate-pulse bg-white/[0.035]" />
-                <div className="space-y-2 p-3.5">
-                  <div className="h-2 w-16 animate-pulse rounded bg-white/[0.06]" />
-                  <div className="h-3 w-32 animate-pulse rounded bg-white/[0.07]" />
-                  <div className="h-2 w-20 animate-pulse rounded bg-white/[0.05]" />
-                  <div className="h-4 w-14 animate-pulse rounded bg-white/[0.07]" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+  <ProductGridSkeleton count={6} className="mt-8" />
+)}
 
         {!productsLoading && productsError && (
           <div className="mt-8 rounded-2xl border border-red-400/10 bg-red-400/[0.035] px-6 py-12 text-center">
@@ -1996,6 +1981,9 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
             action="View all products"
             onAction={() => router.push("/products")}
           />
+          {productsLoading && (
+  <ProductGridSkeleton count={4} className="mt-8" />
+)}
 
           {!productsLoading && !productsError && newArrivalProducts.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">

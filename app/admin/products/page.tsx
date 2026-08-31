@@ -337,21 +337,21 @@ function StatCard({
 
   return (
     <div
-      className={`rounded-2xl border border-white/[0.07] bg-[#0d1018] p-5 transition ${currentTone.border}`}
+      className={`rounded-2xl border border-white/[0.07] bg-[#0d1018] p-4 transition sm:p-5 ${currentTone.border}`}
     >
       <div className="flex items-start justify-between">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${currentTone.icon}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl ${currentTone.icon} sm:h-11 sm:w-11`}
         >
           <Icon name={icon} size={21} />
         </div>
       </div>
 
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+      <p className="mt-4 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:mt-5 sm:text-[11px]">
         {label}
       </p>
 
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {value}
       </p>
 
@@ -366,14 +366,14 @@ function ProductImage({ product }: { product: Product }) {
 
   if (!image || failed) {
     return (
-      <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-600">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-slate-600 sm:h-14 sm:w-14">
         <Icon name="package" size={23} />
       </div>
     );
   }
 
   return (
-    <div className="h-14 w-14 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025]">
+    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.025] sm:h-14 sm:w-14">
       <img
         src={image}
         alt={product.images?.find((item) => item.isPrimary)?.altText || product.name}
@@ -474,7 +474,26 @@ export default function AdminProductsPage() {
     }
 
     loadCategories();
-  }, [products]);
+  }, []);
+
+  useEffect(() => {
+    if (categoryOptions.length > 0 || products.length === 0) return;
+
+    const map = new Map<string, ProductCategory>();
+    products.forEach((product) => {
+      if (product.category?.slug && product.category.name) {
+        map.set(product.category.slug, product.category);
+      }
+    });
+
+    if (map.size > 0) {
+      setCategoryOptions(
+        Array.from(map.values()).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      );
+    }
+  }, [products, categoryOptions.length]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -520,7 +539,7 @@ export default function AdminProductsPage() {
   }, [products]);
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+    <div className="mx-auto w-full max-w-[1500px] px-4 pb-28 pt-5 sm:px-8 sm:pb-10 sm:pt-7 lg:px-10 lg:py-9">
             {/* HEADER */}
             <header className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div>
@@ -528,7 +547,7 @@ export default function AdminProductsPage() {
                   Nexora Admin
                 </div>
 
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                <h1 className="mt-2 text-[30px] font-semibold leading-tight tracking-tight text-white sm:text-4xl">
                   Products
                 </h1>
 
@@ -549,7 +568,7 @@ export default function AdminProductsPage() {
 
                 <Link
                   href="/admin/products/new"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.2)] transition hover:bg-violet-500"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.2)] transition active:scale-[0.99] hover:bg-violet-500 sm:w-auto"
                 >
                   <Icon name="plus" size={18} />
                   Add Product
@@ -557,8 +576,27 @@ export default function AdminProductsPage() {
               </div>
             </header>
 
+            <div className="mt-4 flex items-center justify-between rounded-2xl border border-violet-500/15 bg-violet-500/[0.045] px-4 py-3 lg:hidden">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300/70">
+                  Catalog
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  {stats.total} products · {stats.totalInventory} available units
+                </p>
+              </div>
+
+              <Link
+                href="/admin/products/new"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-violet-600 px-3 text-[11px] font-semibold text-white active:scale-[0.98]"
+              >
+                <Icon name="plus" size={14} />
+                Add
+              </Link>
+            </div>
+
             {/* STATS */}
-            <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 xl:grid-cols-4">
               <StatCard
                 icon="products"
                 label="Total Products"
@@ -593,11 +631,11 @@ export default function AdminProductsPage() {
             </section>
 
             {/* TOOLBAR + TABLE */}
-            <section className="mt-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d1018]">
-              <div className="border-b border-white/[0.07] px-5 py-5 sm:px-6">
+            <section className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d1018] sm:mt-6">
+              <div className="border-b border-white/[0.07] px-4 py-4 sm:px-6 sm:py-5">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-base font-semibold text-white sm:text-lg">
                       Product Catalog
                     </h2>
 
@@ -608,9 +646,9 @@ export default function AdminProductsPage() {
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex w-full flex-col gap-2.5 sm:flex-row">
                     {/* SEARCH */}
-                    <div className="relative min-w-0 sm:w-[300px]">
+                    <div className="relative min-w-0 flex-1 sm:w-[300px] sm:flex-none">
                       <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600">
                         <Icon name="search" size={18} />
                       </span>
@@ -629,7 +667,7 @@ export default function AdminProductsPage() {
                         value={category}
                         onChange={(event) => setCategory(event.target.value)}
                         disabled={categoriesLoading}
-                        className="h-11 min-w-[180px] appearance-none rounded-xl border border-white/[0.08] bg-[#090b10] pl-4 pr-10 text-sm text-slate-300 outline-none transition focus:border-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-11 w-full min-w-0 appearance-none rounded-xl border border-white/[0.08] bg-[#090b10] pl-4 pr-10 text-sm text-slate-300 outline-none transition focus:border-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-[180px]"
                       >
                         <option value="all">
                           {categoriesLoading ? "Loading categories..." : "All categories"}
@@ -652,7 +690,7 @@ export default function AdminProductsPage() {
 
               {/* ERROR */}
               {error && (
-                <div className="m-5 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-300">
+                <div className="mx-4 my-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-300 sm:m-5">
                   {error}
                 </div>
               )}
@@ -906,8 +944,8 @@ export default function AdminProductsPage() {
                     const stockStatus = getStockStatus(stock);
 
                     return (
-                      <div key={product.id} className="p-5">
-                        <div className="flex gap-4">
+                      <div key={product.id} className="p-4 sm:p-5">
+                        <div className="flex gap-3.5 sm:gap-4">
                           <ProductImage product={product} />
 
                           <div className="min-w-0 flex-1">
@@ -922,13 +960,13 @@ export default function AdminProductsPage() {
                               {product.sku}
                             </p>
 
-                            <p className="mt-3 text-lg font-semibold text-white">
+                            <p className="mt-2.5 text-base font-semibold text-white sm:mt-3 sm:text-lg">
                               {formatPrice(product.price)}
                             </p>
                           </div>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between">
+                        <div className="mt-4 flex items-end justify-between gap-3">
                           <div>
                             <p className="text-xs text-slate-600">
                               {product.category?.name || "Uncategorized"}
@@ -940,7 +978,7 @@ export default function AdminProductsPage() {
                           </div>
 
                           <span
-                            className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${stockStatus.className}`}
+                            className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${stockStatus.className} sm:text-[11px]`}
                           >
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${stockStatus.dotClassName}`}
@@ -949,10 +987,10 @@ export default function AdminProductsPage() {
                           </span>
                         </div>
 
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-4 grid grid-cols-2 gap-2.5">
                           <Link
                             href={`/products/${product.id}`}
-                            className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.07] text-sm font-medium text-slate-300"
+                            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.07] text-xs font-medium text-slate-300 active:bg-white/[0.04] sm:text-sm"
                           >
                             <Icon name="eye" size={16} />
                             View
@@ -960,7 +998,7 @@ export default function AdminProductsPage() {
 
                           <Link
   href={`/admin/products/${product.id}/edit`}
-  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-violet-500/20 bg-violet-500/10 text-sm font-medium text-violet-300"
+  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-violet-500/20 bg-violet-500/10 text-xs font-medium text-violet-300 active:bg-violet-500/15 sm:text-sm"
 >
   <Icon name="edit" size={16} />
   Edit

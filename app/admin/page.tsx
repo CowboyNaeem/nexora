@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AdminMobileDashboard from "./components/AdminMobileDashboard";
 
 type OrderStatus =
   | "PENDING"
@@ -400,8 +401,25 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090f] text-white">
-      <div className="mx-auto w-full max-w-[1600px] px-5 py-7 sm:px-8 xl:px-10">
+    <>
+      {/* Mobile dashboard */}
+      <div className="block lg:hidden">
+        <AdminMobileDashboard
+          orders={orders}
+          loading={loading}
+          error={error}
+          stats={stats}
+          chartData={chartData}
+          maxChartValue={maxChartValue}
+          recentOrders={recentOrders}
+          money={money}
+        />
+      </div>
+
+      {/* Desktop dashboard — existing UI preserved */}
+      <div className="hidden lg:block">
+        <div className="min-h-screen bg-[#07090f] text-white">
+          <div className="mx-auto w-full max-w-[1600px] px-5 py-7 sm:px-8 xl:px-10">
         {/* HEADER */}
         <header className="mb-7 flex items-center justify-between gap-6">
           <div>
@@ -873,7 +891,9 @@ export default function AdminDashboardPage() {
             )}
           </div>
         </section>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 type OrderItem = {
   id: string;
   productId: string;
@@ -9,6 +11,16 @@ type OrderItem = {
   quantity: number;
   unitPrice: number | string;
   totalPrice: number | string;
+
+  // Product image returned by the order API
+  product?: {
+    images?: {
+      url: string;
+    }[];
+  } | null;
+
+  imageUrl?: string | null;
+  productImage?: string | null;
 };
 
 type Payment = {
@@ -66,7 +78,11 @@ type MobileOrderDetailsProps = {
 };
 
 function money(value: number | string) {
-  return Number(value).toFixed(2);
+  const amount = Number(value);
+
+  return Number.isFinite(amount)
+    ? amount.toFixed(2)
+    : "0.00";
 }
 
 function formatDate(value: string) {
@@ -80,7 +96,9 @@ function formatStatus(status: string) {
   return status
     .replaceAll("_", " ")
     .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
 }
 
 function getStatusTone(status: string) {
@@ -216,7 +234,13 @@ function Icon({
   if (name === "card") {
     return (
       <svg {...common}>
-        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <rect
+          x="3"
+          y="5"
+          width="18"
+          height="14"
+          rx="2"
+        />
         <path d="M3 10h18" />
         <path d="M7 15h3" />
       </svg>
@@ -263,7 +287,13 @@ function Icon({
   if (name === "copy") {
     return (
       <svg {...common}>
-        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <rect
+          x="9"
+          y="9"
+          width="11"
+          height="11"
+          rx="2"
+        />
         <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" />
       </svg>
     );
@@ -272,7 +302,11 @@ function Icon({
   return null;
 }
 
-function StatusTimeline({ status }: { status: string }) {
+function StatusTimeline({
+  status,
+}: {
+  status: string;
+}) {
   const steps = [
     "PENDING",
     "CONFIRMED",
@@ -328,7 +362,9 @@ function StatusTimeline({ status }: { status: string }) {
 
           <div>
             <p className="text-sm font-medium text-white">
-              {cancelled ? "Order cancelled" : "Order refunded"}
+              {cancelled
+                ? "Order cancelled"
+                : "Order refunded"}
             </p>
 
             <p className="mt-0.5 text-[11px] text-white/35">
@@ -340,8 +376,11 @@ function StatusTimeline({ status }: { status: string }) {
         <div className="mt-6">
           <div className="flex items-start">
             {steps.map((step, index) => {
-              const completed = index < currentIndex;
-              const active = index === currentIndex;
+              const completed =
+                index < currentIndex;
+
+              const active =
+                index === currentIndex;
 
               return (
                 <div
@@ -370,7 +409,10 @@ function StatusTimeline({ status }: { status: string }) {
                         }`}
                       >
                         {completed ? (
-                          <Icon name="check" size={13} />
+                          <Icon
+                            name="check"
+                            size={13}
+                          />
                         ) : (
                           index + 1
                         )}
@@ -399,6 +441,37 @@ function StatusTimeline({ status }: { status: string }) {
   );
 }
 
+/**
+ * Returns the best available product image.
+ *
+ * Supports:
+ * 1. item.product.images[0].url
+ * 2. item.imageUrl
+ * 3. item.productImage
+ *
+ * If none exists, the UI falls back to the box icon.
+ */
+function getProductImage(
+  item: OrderItem
+) {
+  const nestedImage =
+    item.product?.images?.[0]?.url;
+
+  if (nestedImage) {
+    return nestedImage;
+  }
+
+  if (item.imageUrl) {
+    return item.imageUrl;
+  }
+
+  if (item.productImage) {
+    return item.productImage;
+  }
+
+  return null;
+}
+
 export default function MobileOrderDetails({
   order,
   canCancel,
@@ -409,20 +482,30 @@ export default function MobileOrderDetails({
   onViewCart,
   onBack,
 }: MobileOrderDetailsProps) {
-  const statusTone = getStatusTone(order.status);
+  const statusTone = getStatusTone(
+    order.status
+  );
 
   return (
     <div className="min-h-screen bg-[#050506] pb-8 text-white">
-      {/* HEADER */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#050506]/95 backdrop-blur-xl">
         <div className="flex h-[62px] items-center justify-between px-4">
+
           <button
             type="button"
             onClick={onBack}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/65 transition active:scale-95"
             aria-label="Go back"
           >
-            <Icon name="back" size={19} />
+            <Icon
+              name="back"
+              size={19}
+            />
           </button>
 
           <div className="flex items-center gap-2.5">
@@ -441,19 +524,28 @@ export default function MobileOrderDetails({
             className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/60 transition active:scale-95"
             aria-label="View cart"
           >
-            <Icon name="cart" size={18} />
+            <Icon
+              name="cart"
+              size={18}
+            />
           </button>
+
         </div>
       </header>
 
       <main className="px-4 pb-10 pt-5">
-        {/* BREADCRUMB / TITLE */}
+
+        {/* ===================================================
+            TITLE
+        =================================================== */}
+
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-violet-400">
             NEXORA / ORDERS
           </p>
 
           <div className="mt-3 flex items-end justify-between gap-4">
+
             <div className="min-w-0">
               <h1 className="text-[26px] font-semibold tracking-[-0.04em]">
                 Order details
@@ -469,10 +561,14 @@ export default function MobileOrderDetails({
             >
               {formatStatus(order.status)}
             </span>
+
           </div>
         </div>
 
-        {/* STATUS / SUCCESS */}
+        {/* ===================================================
+            STATUS
+        =================================================== */}
+
         <section
           className={`mt-5 rounded-2xl border p-4 ${
             order.status === "CANCELLED"
@@ -481,6 +577,7 @@ export default function MobileOrderDetails({
           }`}
         >
           <div className="flex items-center gap-3">
+
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
                 order.status === "CANCELLED"
@@ -491,7 +588,10 @@ export default function MobileOrderDetails({
               {order.status === "CANCELLED" ? (
                 "×"
               ) : (
-                <Icon name="check" size={18} />
+                <Icon
+                  name="check"
+                  size={18}
+                />
               )}
             </div>
 
@@ -505,115 +605,218 @@ export default function MobileOrderDetails({
               <p className="mt-1 text-[10px] leading-4 text-white/35">
                 {order.status === "CANCELLED"
                   ? "This order will no longer be processed."
-                  : `Placed on ${formatDate(order.createdAt)}`}
+                  : `Placed on ${formatDate(
+                      order.createdAt
+                    )}`}
               </p>
             </div>
+
           </div>
 
-          <StatusTimeline status={order.status} />
+          <StatusTimeline
+            status={order.status}
+          />
         </section>
 
-        {/* ORDER ITEMS */}
+        {/* ===================================================
+            ORDER ITEMS
+        =================================================== */}
+
         <section className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.025]">
+
           <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
+
             <div className="flex items-center gap-2.5">
+
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-                <Icon name="box" size={16} />
+                <Icon
+                  name="box"
+                  size={16}
+                />
               </div>
 
               <div>
-                <h2 className="text-sm font-semibold">Order items</h2>
+                <h2 className="text-sm font-semibold">
+                  Order items
+                </h2>
+
                 <p className="mt-0.5 text-[9px] text-white/30">
                   {order.items.length}{" "}
-                  {order.items.length === 1 ? "item" : "items"}
+                  {order.items.length === 1
+                    ? "item"
+                    : "items"}
                 </p>
               </div>
+
             </div>
+
           </div>
 
           <div className="divide-y divide-white/[0.06] px-4">
-            {order.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex gap-3 py-4"
-              >
-                {/* Product visual */}
-                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-[#101014]">
-                  <Icon
-                    name="box"
-                    size={25}
-                  />
+
+            {order.items.map((item) => {
+              const image =
+                getProductImage(item);
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex gap-3 py-4"
+                >
+
+                  {/* =========================================
+                      PRODUCT IMAGE
+                  ========================================= */}
+
+                  <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl border border-white/[0.06] bg-[#101014]">
+
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.productName}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.style.display =
+                            "none";
+
+                          const fallback =
+                            event.currentTarget
+                              .nextElementSibling;
+
+                          if (
+                            fallback instanceof
+                            HTMLElement
+                          ) {
+                            fallback.style.display =
+                              "flex";
+                          }
+                        }}
+                      />
+                    ) : null}
+
+                    <div
+                      className={`h-full w-full items-center justify-center text-white/20 ${
+                        image
+                          ? "hidden"
+                          : "flex"
+                      }`}
+                    >
+                      <Icon
+                        name="box"
+                        size={25}
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* =========================================
+                      PRODUCT INFORMATION
+                  ========================================= */}
+
+                  <div className="min-w-0 flex-1">
+
+                    <h3 className="truncate text-[13px] font-medium text-white/90">
+                      {item.productName}
+                    </h3>
+
+                    <p className="mt-1 truncate text-[9px] text-white/30">
+                      SKU: {item.sku}
+                    </p>
+
+                    <p className="mt-2 text-[10px] text-white/40">
+                      Qty {item.quantity} × $
+                      {money(item.unitPrice)}
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      ${money(item.totalPrice)}
+                    </p>
+
+                  </div>
+
                 </div>
+              );
+            })}
 
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-[13px] font-medium text-white/90">
-                    {item.productName}
-                  </h3>
-
-                  <p className="mt-1 truncate text-[9px] text-white/30">
-                    SKU: {item.sku}
-                  </p>
-
-                  <p className="mt-2 text-[10px] text-white/40">
-                    Qty {item.quantity} × ${money(item.unitPrice)}
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    ${money(item.totalPrice)}
-                  </p>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
-        {/* ORDER SUMMARY */}
+        {/* ===================================================
+            ORDER SUMMARY
+        =================================================== */}
+
         <section className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+
           <div className="flex items-center gap-2.5">
+
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-              <Icon name="card" size={16} />
+              <Icon
+                name="card"
+                size={16}
+              />
             </div>
 
             <h2 className="text-sm font-semibold">
               Order summary
             </h2>
+
           </div>
 
           <div className="mt-5 space-y-3">
+
             <div className="flex items-center justify-between text-[12px]">
-              <span className="text-white/35">Subtotal</span>
+              <span className="text-white/35">
+                Subtotal
+              </span>
+
               <span className="text-white/70">
                 ${money(order.subtotal)}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-[12px]">
-              <span className="text-white/35">Shipping</span>
+              <span className="text-white/35">
+                Shipping
+              </span>
+
               <span
                 className={
-                  Number(order.shippingCost) === 0
+                  Number(order.shippingCost) ===
+                  0
                     ? "text-emerald-400"
                     : "text-white/70"
                 }
               >
-                {Number(order.shippingCost) === 0
+                {Number(order.shippingCost) ===
+                0
                   ? "Free"
-                  : `$${money(order.shippingCost)}`}
+                  : `$${money(
+                      order.shippingCost
+                    )}`}
               </span>
             </div>
 
-            {Number(order.discountAmount) > 0 && (
+            {Number(order.discountAmount) >
+              0 && (
               <div className="flex items-center justify-between text-[12px]">
-                <span className="text-white/35">Discount</span>
+                <span className="text-white/35">
+                  Discount
+                </span>
 
                 <span className="text-emerald-400">
-                  -${money(order.discountAmount)}
+                  -$
+                  {money(
+                    order.discountAmount
+                  )}
                 </span>
               </div>
             )}
 
             <div className="border-t border-white/[0.07] pt-4">
+
               <div className="flex items-end justify-between">
+
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">
                     Total
@@ -627,16 +830,27 @@ export default function MobileOrderDetails({
                 <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-violet-300">
                   Paid order
                 </span>
+
               </div>
+
             </div>
+
           </div>
         </section>
 
-        {/* PAYMENT */}
+        {/* ===================================================
+            PAYMENT
+        =================================================== */}
+
         <section className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+
           <div className="flex items-center gap-2.5">
+
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-              <Icon name="card" size={16} />
+              <Icon
+                name="card"
+                size={16}
+              />
             </div>
 
             <div>
@@ -648,17 +862,21 @@ export default function MobileOrderDetails({
                 Payment information
               </p>
             </div>
+
           </div>
 
           {order.payment ? (
             <div className="mt-5 space-y-3.5">
+
               <div className="flex items-center justify-between gap-4">
                 <span className="text-[11px] text-white/35">
                   Method
                 </span>
 
                 <span className="max-w-[58%] text-right text-[11px] font-medium text-white/75">
-                  {formatStatus(order.payment.method)}
+                  {formatStatus(
+                    order.payment.method
+                  )}
                 </span>
               </div>
 
@@ -672,7 +890,9 @@ export default function MobileOrderDetails({
                     order.payment.status
                   )}`}
                 >
-                  {formatStatus(order.payment.status)}
+                  {formatStatus(
+                    order.payment.status
+                  )}
                 </span>
               </div>
 
@@ -682,34 +902,53 @@ export default function MobileOrderDetails({
                 </span>
 
                 <span className="text-[11px] font-medium text-white/75">
-                  ${money(order.payment.amount)}
+                  $
+                  {money(
+                    order.payment.amount
+                  )}
                 </span>
               </div>
 
-              {order.payment.transactionId && (
+              {order.payment
+                .transactionId && (
                 <div className="flex items-start justify-between gap-4">
+
                   <span className="text-[11px] text-white/35">
                     Transaction ID
                   </span>
 
                   <span className="max-w-[58%] break-all text-right font-mono text-[9px] text-white/60">
-                    {order.payment.transactionId}
+                    {
+                      order.payment
+                        .transactionId
+                    }
                   </span>
+
                 </div>
               )}
+
             </div>
           ) : (
             <p className="mt-4 text-[11px] text-white/30">
               Payment information is not available.
             </p>
           )}
+
         </section>
 
-        {/* DELIVERY */}
+        {/* ===================================================
+            DELIVERY
+        =================================================== */}
+
         <section className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+
           <div className="flex items-center gap-2.5">
+
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-              <Icon name="truck" size={16} />
+              <Icon
+                name="truck"
+                size={16}
+              />
             </div>
 
             <div>
@@ -721,10 +960,12 @@ export default function MobileOrderDetails({
                 Shipping & tracking
               </p>
             </div>
+
           </div>
 
           {order.shipment ? (
             <div className="mt-5 space-y-3.5">
+
               <div className="flex items-center justify-between gap-4">
                 <span className="text-[11px] text-white/35">
                   Status
@@ -732,10 +973,14 @@ export default function MobileOrderDetails({
 
                 <span
                   className={`text-[11px] font-medium ${
-                    getStatusTone(order.shipment.status).text
+                    getStatusTone(
+                      order.shipment.status
+                    ).text
                   }`}
                 >
-                  {formatStatus(order.shipment.status)}
+                  {formatStatus(
+                    order.shipment.status
+                  )}
                 </span>
               </div>
 
@@ -751,56 +996,83 @@ export default function MobileOrderDetails({
                 </div>
               )}
 
-              {order.shipment.trackingNumber && (
+              {order.shipment
+                .trackingNumber && (
                 <div className="flex items-center justify-between gap-4">
+
                   <span className="text-[11px] text-white/35">
                     Tracking
                   </span>
 
                   <span className="max-w-[58%] truncate text-right font-mono text-[9px] text-white/60">
-                    {order.shipment.trackingNumber}
+                    {
+                      order.shipment
+                        .trackingNumber
+                    }
                   </span>
+
                 </div>
               )}
 
               {order.shipment.shippedAt && (
                 <div className="flex items-center justify-between gap-4">
+
                   <span className="text-[11px] text-white/35">
                     Shipped
                   </span>
 
                   <span className="text-right text-[10px] text-white/55">
-                    {formatDate(order.shipment.shippedAt)}
+                    {formatDate(
+                      order.shipment.shippedAt
+                    )}
                   </span>
+
                 </div>
               )}
 
               {order.shipment.deliveredAt && (
                 <div className="flex items-center justify-between gap-4">
+
                   <span className="text-[11px] text-white/35">
                     Delivered
                   </span>
 
                   <span className="text-right text-[10px] text-emerald-400">
-                    {formatDate(order.shipment.deliveredAt)}
+                    {formatDate(
+                      order.shipment.deliveredAt
+                    )}
                   </span>
+
                 </div>
               )}
+
             </div>
           ) : (
             <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5">
+
               <p className="text-[11px] text-white/40">
-                Shipment information will appear here once your order is shipped.
+                Shipment information will appear here
+                once your order is shipped.
               </p>
+
             </div>
           )}
+
         </section>
 
-        {/* SHIPPING ADDRESS */}
+        {/* ===================================================
+            SHIPPING ADDRESS
+        =================================================== */}
+
         <section className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+
           <div className="flex items-center gap-2.5">
+
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-              <Icon name="location" size={16} />
+              <Icon
+                name="location"
+                size={16}
+              />
             </div>
 
             <div>
@@ -812,9 +1084,11 @@ export default function MobileOrderDetails({
                 Where your order is going
               </p>
             </div>
+
           </div>
 
           <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.015] p-3.5">
+
             <p className="text-[12px] font-medium text-white/80">
               {order.shippingName}
             </p>
@@ -836,10 +1110,14 @@ export default function MobileOrderDetails({
               <br />
               {order.shippingCountry}
             </p>
+
           </div>
         </section>
 
-        {/* ERROR */}
+        {/* ===================================================
+            CANCEL ERROR
+        =================================================== */}
+
         {cancelError && (
           <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-4">
             <p className="text-[11px] leading-5 text-red-400">
@@ -848,8 +1126,12 @@ export default function MobileOrderDetails({
           </div>
         )}
 
-        {/* ACTIONS */}
+        {/* ===================================================
+            ACTIONS
+        =================================================== */}
+
         <div className="mt-6 space-y-3">
+
           {canCancel && (
             <button
               type="button"
@@ -857,7 +1139,9 @@ export default function MobileOrderDetails({
               disabled={cancelling}
               className="w-full rounded-xl border border-red-500/20 bg-red-500/[0.045] py-3.5 text-[12px] font-semibold text-red-400 transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {cancelling ? "Cancelling..." : "Cancel order"}
+              {cancelling
+                ? "Cancelling..."
+                : "Cancel order"}
             </button>
           )}
 
@@ -876,13 +1160,19 @@ export default function MobileOrderDetails({
           >
             View cart
           </button>
+
         </div>
+
+        {/* ===================================================
+            FOOTER
+        =================================================== */}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-[9px] text-white/20">
           <span className="h-px w-8 bg-white/[0.06]" />
           <span>NEXORA MARKETPLACE</span>
           <span className="h-px w-8 bg-white/[0.06]" />
         </div>
+
       </main>
     </div>
   );

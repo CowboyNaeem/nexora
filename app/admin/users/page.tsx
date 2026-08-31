@@ -234,16 +234,16 @@ function StatCard({
     | "check";
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#0d1018] p-5">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0d1018] p-4 sm:p-5">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300 sm:h-11 sm:w-11">
         <Icon name={icon} size={21} />
       </div>
 
-      <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+      <p className="mt-4 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:mt-5 sm:text-[10px]">
         {label}
       </p>
 
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {value}
       </p>
 
@@ -748,7 +748,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#080a0f] px-4 py-8 text-white sm:px-6 lg:px-10">
+    <main className="min-h-screen overflow-x-hidden bg-[#080a0f] px-4 pb-28 pt-5 text-white sm:px-6 sm:pb-10 sm:pt-8 lg:px-10 lg:py-8">
       <div className="mx-auto w-full max-w-7xl">
 
         {/* HEADER */}
@@ -766,7 +766,7 @@ export default function AdminUsersPage() {
             </span>
           </div>
 
-          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">
+          <h1 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.035em] sm:text-5xl">
             Users
           </h1>
 
@@ -784,7 +784,7 @@ export default function AdminUsersPage() {
                 setMessage("");
                 setShowAddAdmin(true);
               }}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.22)] transition hover:bg-violet-500 active:scale-[0.98]"
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(124,58,237,0.22)] transition hover:bg-violet-500 active:scale-[0.98] sm:w-auto"
             >
               <Icon name="plus" size={17} />
               Add Admin
@@ -794,7 +794,7 @@ export default function AdminUsersPage() {
 
         {/* STATS */}
 
-        <section className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-9 sm:gap-4 xl:grid-cols-5">
           <StatCard
             label="Total users"
             value={stats.total}
@@ -833,11 +833,11 @@ export default function AdminUsersPage() {
 
         {/* MAIN PANEL */}
 
-        <section className="mt-6 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0b0e15]">
+        <section className="mt-5 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b0e15] sm:mt-6 sm:rounded-3xl">
 
           {/* TOOLBAR */}
 
-          <div className="border-b border-white/[0.07] p-5 sm:p-6">
+          <div className="border-b border-white/[0.07] p-4 sm:p-6">
 
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 
@@ -862,7 +862,7 @@ export default function AdminUsersPage() {
                 />
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
 
                 <FilterDropdown
                   value={roleFilter}
@@ -891,7 +891,7 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   onClick={loadUsers}
-                  className="flex h-12 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                  className="flex h-12 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-white/60 transition hover:bg-white/[0.06] hover:text-white sm:px-4"
                   title="Refresh users"
                 >
                   <Icon
@@ -907,13 +907,13 @@ export default function AdminUsersPage() {
           {/* MESSAGES */}
 
           {message && (
-            <div className="mx-5 mt-5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.05] px-4 py-3 text-sm text-emerald-300 sm:mx-6">
+            <div className="mx-4 mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.05] px-4 py-3 text-sm text-emerald-300 sm:mx-6 sm:mt-5">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="mx-5 mt-5 rounded-xl border border-red-400/20 bg-red-400/[0.05] px-4 py-3 text-sm text-red-300 sm:mx-6">
+            <div className="mx-4 mt-4 rounded-xl border border-red-400/20 bg-red-400/[0.05] px-4 py-3 text-sm text-red-300 sm:mx-6 sm:mt-5">
               {error}
             </div>
           )}
@@ -921,7 +921,7 @@ export default function AdminUsersPage() {
           {/* LOADING */}
 
           {loading ? (
-            <div className="space-y-3 p-5 sm:p-6">
+            <div className="space-y-3 p-4 sm:p-6">
               {Array.from({
                 length: 6,
               }).map((_, index) => (
@@ -934,7 +934,7 @@ export default function AdminUsersPage() {
           ) : users.length === 0 ? (
             /* EMPTY */
 
-            <div className="px-6 py-20 text-center">
+            <div className="px-5 py-16 text-center sm:px-6 sm:py-20">
 
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] text-white/30">
                 <Icon
@@ -954,9 +954,140 @@ export default function AdminUsersPage() {
 
             </div>
           ) : (
-            /* TABLE */
+            <>
+              {/* MOBILE USER CARDS */}
+              <div className="divide-y divide-white/[0.06] lg:hidden">
+                {users.map((user) => (
+                  <article key={user.id} className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-sm font-semibold text-violet-300">
+                          {getInitials(user.name)}
+                        </div>
+                      )}
 
-            <div className="overflow-x-auto">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {user.name}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-white/35">
+                          {user.email}
+                        </p>
+                        {user.phone && (
+                          <p className="mt-0.5 truncate text-[11px] text-white/25">
+                            {user.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <RoleBadge role={user.role} />
+                      <StatusBadge status={user.status} />
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+                        <p className="text-[9px] uppercase tracking-[0.12em] text-white/25">
+                          Orders
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-white/80">
+                          {user.orderCount}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+                        <p className="text-[9px] uppercase tracking-[0.12em] text-white/25">
+                          Spent
+                        </p>
+                        <p className="mt-1 truncate text-sm font-semibold text-white/80">
+                          {money(user.totalSpent)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+                        <p className="text-[9px] uppercase tracking-[0.12em] text-white/25">
+                          Joined
+                        </p>
+                        <p className="mt-1 truncate text-xs font-medium text-white/60">
+                          {formatDate(user.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMessage(`Editing ${user.name} is not enabled yet.`)
+                        }
+                        className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.025] text-xs font-medium text-white/55 active:bg-white/[0.05]"
+                      >
+                        <Icon name="edit" size={15} />
+                        Edit
+                      </button>
+
+                      {user.status === "ACTIVE" ? (
+                        <button
+                          type="button"
+                          disabled={updatingId === user.id}
+                          onClick={() =>
+                            updateUser(user.id, { status: "SUSPENDED" })
+                          }
+                          className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-400/15 bg-amber-400/[0.04] text-xs font-medium text-amber-300 disabled:opacity-40"
+                        >
+                          <Icon name="pause" size={15} />
+                          Suspend
+                        </button>
+                      ) : user.status === "SUSPENDED" ? (
+                        <button
+                          type="button"
+                          disabled={updatingId === user.id}
+                          onClick={() =>
+                            updateUser(user.id, { status: "ACTIVE" })
+                          }
+                          className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] text-xs font-medium text-emerald-300 disabled:opacity-40"
+                        >
+                          <Icon name="check" size={15} />
+                          Activate
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+
+                      {user.status !== "DELETED" ? (
+                        <button
+                          type="button"
+                          disabled={updatingId === user.id}
+                          onClick={() => {
+                            const confirmed = window.confirm(
+                              `Mark ${user.name} as deleted?`
+                            );
+                            if (confirmed) {
+                              updateUser(user.id, { status: "DELETED" });
+                            }
+                          }}
+                          className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-red-400/15 bg-red-400/[0.035] text-xs font-medium text-red-300 disabled:opacity-40"
+                        >
+                          <Icon name="trash" size={15} />
+                          Delete
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* DESKTOP TABLE */}
+              <div className="hidden overflow-x-auto lg:block">
 
               <table className="w-full min-w-[920px] lg:min-w-0 table-fixed">
 
@@ -1232,14 +1363,15 @@ export default function AdminUsersPage() {
 
               </table>
 
-            </div>
+              </div>
+            </>
           )}
 
           {/* FOOTER */}
 
           {!loading &&
             users.length > 0 && (
-              <div className="flex flex-col gap-2 border-t border-white/[0.07] px-6 py-4 text-xs text-white/25 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 border-t border-white/[0.07] px-4 py-4 text-xs text-white/25 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
                 <span>
                   Showing {users.length}{" "}
                   {users.length === 1
@@ -1258,7 +1390,7 @@ export default function AdminUsersPage() {
 
         {showAddAdmin && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget && !creatingAdmin) {
                 setShowAddAdmin(false);
@@ -1269,9 +1401,9 @@ export default function AdminUsersPage() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="add-admin-title"
-              className="w-full max-w-lg rounded-3xl border border-white/[0.10] bg-[#0d1018] shadow-[0_30px_100px_rgba(0,0,0,0.65)]"
+              className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.10] bg-[#0d1018] shadow-[0_30px_100px_rgba(0,0,0,0.65)] sm:rounded-3xl"
             >
-              <div className="flex items-start justify-between border-b border-white/[0.07] p-6">
+              <div className="flex items-start justify-between border-b border-white/[0.07] p-5 sm:p-6">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400">
                     Administration
@@ -1295,7 +1427,7 @@ export default function AdminUsersPage() {
                 </button>
               </div>
 
-              <div className="space-y-5 p-6">
+              <div className="space-y-4 p-5 sm:space-y-5 sm:p-6">
                 <div>
                   <label className="mb-2 block text-xs font-medium text-white/60">
                     Full name
@@ -1378,7 +1510,7 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] p-6 sm:flex-row sm:justify-end">
+              <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] p-5 sm:flex-row sm:justify-end sm:p-6">
                 <button
                   type="button"
                   disabled={creatingAdmin}

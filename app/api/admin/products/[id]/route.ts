@@ -172,6 +172,7 @@ export async function PATCH(
       compareAtPrice,
       stockQuantity,
       status,
+      images,
     } = body;
 
     /* ----------------------------------------------------------
@@ -310,14 +311,44 @@ export async function PATCH(
       "ARCHIVED",
     ] as const;
 
+    if (
+      typeof status !== "string" ||
+      !allowedStatuses.includes(
+        status as (typeof allowedStatuses)[number]
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid product status",
+        },
+        { status: 400 }
+      );
+    }
+
     const productStatus =
-      allowedStatuses.includes(status)
-        ? status
-        : "DRAFT";
+      status as (typeof allowedStatuses)[number];
+
+    const productImages: string[] = Array.isArray(images)
+      ? images.filter(
+          (url: unknown): url is string =>
+            typeof url === "string" && url.trim().length > 0
+        )
+      : [];
+
+    if (productImages.length > 12) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A product can have a maximum of 12 images",
+        },
+        { status: 400 }
+      );
+    }
 
     /* ----------------------------------------------------------
        CHECK PRODUCT
-    ---------------------------------------------------------- */
+    ----------------------------------------------------------
 
     const existingProduct =
       await prisma.product.findUnique({
@@ -506,6 +537,24 @@ export async function PATCH(
                 quantity: numericStock,
                 reserved: 0,
               },
+            });
+          }
+
+          await tx.productImage.deleteMany({
+            where: {
+              productId: id,
+            },
+          });
+
+          if (productImages.length > 0) {
+            await tx.productImage.createMany({
+              data: productImages.map((url, index) => ({
+                productId: id,
+                url: url.trim(),
+                altText: name.trim(),
+                sortOrder: index,
+                isPrimary: index === 0,
+              })),
             });
           }
 

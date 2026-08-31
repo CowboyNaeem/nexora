@@ -22,7 +22,7 @@ export async function GET(request: Request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
           success: false,
           message: "Admin access required",
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -55,8 +55,11 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
 
-    const search = searchParams.get("search")?.trim() || "";
-    const category = searchParams.get("category")?.trim() || "";
+    const search =
+      searchParams.get("search")?.trim() || "";
+
+    const category =
+      searchParams.get("category")?.trim() || "";
 
     // ------------------------------------------------------------
     // Build filters
@@ -148,14 +151,17 @@ export async function GET(request: Request) {
       products,
     });
   } catch (error) {
-    console.error("GET /api/admin/products error:", error);
+    console.error(
+      "GET /api/admin/products error:",
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
         message: "Failed to fetch admin products",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -179,7 +185,7 @@ export async function POST(request: Request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -191,7 +197,7 @@ export async function POST(request: Request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -202,7 +208,7 @@ export async function POST(request: Request) {
           success: false,
           message: "Admin access required",
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -223,29 +229,38 @@ export async function POST(request: Request) {
       compareAtPrice,
       stockQuantity,
       status,
+      images,
     } = body;
 
     // ------------------------------------------------------------
     // Basic validation
     // ------------------------------------------------------------
 
-    if (!name || typeof name !== "string" || !name.trim()) {
+    if (
+      !name ||
+      typeof name !== "string" ||
+      !name.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
           message: "Product name is required",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    if (!sku || typeof sku !== "string" || !sku.trim()) {
+    if (
+      !sku ||
+      typeof sku !== "string" ||
+      !sku.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
           message: "SKU is required",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -255,7 +270,7 @@ export async function POST(request: Request) {
           success: false,
           message: "Category is required",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -265,66 +280,187 @@ export async function POST(request: Request) {
           success: false,
           message: "Store is required",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    if (price === undefined || price === null || price === "") {
+    if (
+      price === undefined ||
+      price === null ||
+      price === ""
+    ) {
       return NextResponse.json(
         {
           success: false,
           message: "Price is required",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const numericPrice = Number(price);
 
-    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+    if (
+      !Number.isFinite(numericPrice) ||
+      numericPrice < 0
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Price must be a valid non-negative number",
+          message:
+            "Price must be a valid non-negative number",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const numericStock = Number(stockQuantity ?? 0);
+    const numericStock = Number(
+      stockQuantity ?? 0
+    );
 
-    if (!Number.isInteger(numericStock) || numericStock < 0) {
+    if (
+      !Number.isInteger(numericStock) ||
+      numericStock < 0
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Stock quantity must be a non-negative whole number",
+          message:
+            "Stock quantity must be a non-negative whole number",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    let numericCompareAtPrice: number | null = null;
+    let numericCompareAtPrice: number | null =
+      null;
 
     if (
       compareAtPrice !== undefined &&
       compareAtPrice !== null &&
       compareAtPrice !== ""
     ) {
-      numericCompareAtPrice = Number(compareAtPrice);
+      numericCompareAtPrice =
+        Number(compareAtPrice);
 
       if (
-        !Number.isFinite(numericCompareAtPrice) ||
+        !Number.isFinite(
+          numericCompareAtPrice
+        ) ||
         numericCompareAtPrice < 0
       ) {
         return NextResponse.json(
           {
             success: false,
-            message: "Compare-at price must be a valid non-negative number",
+            message:
+              "Compare-at price must be a valid non-negative number",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
+
+    // ------------------------------------------------------------
+    // Validate images
+    // ------------------------------------------------------------
+
+    let productImages: {
+      url: string;
+      altText: string | null;
+    }[] = [];
+
+    if (images !== undefined && images !== null) {
+      if (!Array.isArray(images)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Images must be an array",
+          },
+          { status: 400 }
+        );
+      }
+
+      productImages = images
+        .map((image: unknown) => {
+          if (
+            typeof image === "string" &&
+            image.trim()
+          ) {
+            return {
+              url: image.trim(),
+              altText: null,
+            };
+          }
+
+          if (
+            typeof image === "object" &&
+            image !== null &&
+            "url" in image
+          ) {
+            const imageObject =
+              image as {
+                url?: unknown;
+                altText?: unknown;
+              };
+
+            if (
+              typeof imageObject.url ===
+                "string" &&
+              imageObject.url.trim()
+            ) {
+              return {
+                url: imageObject.url.trim(),
+                altText:
+                  typeof imageObject.altText ===
+                  "string"
+                    ? imageObject.altText.trim() ||
+                      null
+                    : null,
+              };
+            }
+          }
+
+          return null;
+        })
+        .filter(
+          (
+            image
+          ): image is {
+            url: string;
+            altText: string | null;
+          } => image !== null
+        );
+
+      if (productImages.length !== images.length) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "One or more product images are invalid",
+          },
+          { status: 400 }
+        );
+      }
+
+      /*
+       * Limit the number of product images.
+       * This keeps the product gallery manageable.
+       */
+      if (productImages.length > 10) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "A product can have a maximum of 10 images",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Validate product status
+    // ------------------------------------------------------------
 
     const allowedStatuses = [
       "DRAFT",
@@ -333,55 +469,61 @@ export async function POST(request: Request) {
       "ARCHIVED",
     ] as const;
 
-    const productStatus = allowedStatuses.includes(status)
-      ? status
-      : "DRAFT";
+    const productStatus =
+      allowedStatuses.includes(status)
+        ? status
+        : "DRAFT";
 
     // ------------------------------------------------------------
     // Validate related records
     // ------------------------------------------------------------
 
-    const [category, store, brand] = await Promise.all([
-      prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-        },
-      }),
+    const [category, store, brand] =
+      await Promise.all([
+        prisma.category.findFirst({
+          where: {
+            id: categoryId,
+            isActive: true,
+          },
 
-      prisma.store.findFirst({
-        where: {
-          id: storeId,
-          status: "ACTIVE",
-        },
-        select: {
-          id: true,
-        },
-      }),
+          select: {
+            id: true,
+          },
+        }),
 
-      brandId
-        ? prisma.brand.findFirst({
-            where: {
-              id: brandId,
-              isActive: true,
-            },
-            select: {
-              id: true,
-            },
-          })
-        : null,
-    ]);
+        prisma.store.findFirst({
+          where: {
+            id: storeId,
+            status: "ACTIVE",
+          },
+
+          select: {
+            id: true,
+          },
+        }),
+
+        brandId
+          ? prisma.brand.findFirst({
+              where: {
+                id: brandId,
+                isActive: true,
+              },
+
+              select: {
+                id: true,
+              },
+            })
+          : null,
+      ]);
 
     if (!category) {
       return NextResponse.json(
         {
           success: false,
-          message: "Selected category was not found or is inactive",
+          message:
+            "Selected category was not found or is inactive",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -389,9 +531,10 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Selected store was not found or is inactive",
+          message:
+            "Selected store was not found or is inactive",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -399,9 +542,10 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Selected brand was not found or is inactive",
+          message:
+            "Selected brand was not found or is inactive",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -409,22 +553,25 @@ export async function POST(request: Request) {
     // Check SKU
     // ------------------------------------------------------------
 
-    const existingSku = await prisma.product.findUnique({
-      where: {
-        sku: sku.trim(),
-      },
-      select: {
-        id: true,
-      },
-    });
+    const existingSku =
+      await prisma.product.findUnique({
+        where: {
+          sku: sku.trim(),
+        },
+
+        select: {
+          id: true,
+        },
+      });
 
     if (existingSku) {
       return NextResponse.json(
         {
           success: false,
-          message: "A product with this SKU already exists",
+          message:
+            "A product with this SKU already exists",
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -437,7 +584,8 @@ export async function POST(request: Request) {
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") || "product";
+        .replace(/^-+|-+$/g, "") ||
+      "product";
 
     let slug = baseSlug;
     let slugCounter = 1;
@@ -447,6 +595,7 @@ export async function POST(request: Request) {
         where: {
           slug,
         },
+
         select: {
           id: true,
         },
@@ -457,76 +606,126 @@ export async function POST(request: Request) {
     }
 
     // ------------------------------------------------------------
-    // Create Product + Inventory atomically
+    // Create Product + Inventory + Images atomically
     // ------------------------------------------------------------
 
-    const product = await prisma.$transaction(async (tx) => {
-      const createdProduct = await tx.product.create({
-        data: {
-          name: name.trim(),
-          slug,
+    const product =
+      await prisma.$transaction(
+        async (tx) => {
+          const createdProduct =
+            await tx.product.create({
+              data: {
+                name: name.trim(),
 
-          description:
-            typeof description === "string" && description.trim()
-              ? description.trim()
-              : null,
+                slug,
 
-          sku: sku.trim(),
-          price: numericPrice,
-          compareAtPrice: numericCompareAtPrice,
+                description:
+                  typeof description ===
+                    "string" &&
+                  description.trim()
+                    ? description.trim()
+                    : null,
 
-          status: productStatus,
+                sku: sku.trim(),
 
-          storeId,
-          categoryId,
-          brandId: brandId || null,
-        },
-      });
+                price: numericPrice,
 
-      await tx.inventory.create({
-        data: {
-          productId: createdProduct.id,
-          quantity: numericStock,
-          reserved: 0,
-        },
-      });
+                compareAtPrice:
+                  numericCompareAtPrice,
 
-      return createdProduct;
-    });
+                status: productStatus,
+
+                storeId,
+
+                categoryId,
+
+                brandId:
+                  brandId || null,
+              },
+            });
+
+          // ------------------------------------------------------
+          // Create Inventory
+          // ------------------------------------------------------
+
+          await tx.inventory.create({
+            data: {
+              productId:
+                createdProduct.id,
+
+              quantity: numericStock,
+
+              reserved: 0,
+            },
+          });
+
+          // ------------------------------------------------------
+          // Create Product Images
+          // ------------------------------------------------------
+
+          if (productImages.length > 0) {
+            await tx.productImage.createMany({
+              data: productImages.map(
+                (image, index) => ({
+                  productId:
+                    createdProduct.id,
+
+                  url: image.url,
+
+                  altText:
+                    image.altText ||
+                    name.trim(),
+
+                  sortOrder: index,
+
+                  isPrimary: index === 0,
+                })
+              ),
+            });
+          }
+
+          return createdProduct;
+        }
+      );
 
     // ------------------------------------------------------------
     // Return created product
     // ------------------------------------------------------------
 
-    const result = await prisma.product.findUnique({
-      where: {
-        id: product.id,
-      },
+    const result =
+      await prisma.product.findUnique({
+        where: {
+          id: product.id,
+        },
 
-      include: {
-        category: true,
-        brand: true,
-        store: true,
-        inventory: true,
+        include: {
+          category: true,
+          brand: true,
+          store: true,
+          inventory: true,
 
-        images: {
-          orderBy: {
-            sortOrder: "asc",
+          images: {
+            orderBy: {
+              sortOrder: "asc",
+            },
           },
         },
-      },
-    });
+      });
 
     return NextResponse.json(
       {
         success: true,
-        message: "Product created successfully",
+        message:
+          "Product created successfully",
         product: result,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
-    console.error("POST /api/admin/products error:", error);
+    console.error(
+      "POST /api/admin/products error:",
+      error
+    );
 
     // Prisma unique constraint
     if (
@@ -538,9 +737,10 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "A product with the same unique value already exists",
+          message:
+            "A product with the same unique value already exists",
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -549,7 +749,7 @@ export async function POST(request: Request) {
         success: false,
         message: "Unable to create product",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

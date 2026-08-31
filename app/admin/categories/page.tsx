@@ -277,16 +277,16 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#0d1018] p-5 transition hover:border-white/[0.12]">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0d1018] p-4 transition hover:border-white/[0.12] sm:p-5">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
         {icon}
       </div>
 
-      <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
+      <p className="mt-4 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/30 sm:mt-5 sm:text-[10px]">
         {label}
       </p>
 
-      <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {value}
       </p>
 
@@ -669,14 +669,14 @@ export default function AdminCategoriesPage() {
   ======================================================= */
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#07090f] text-white">
-      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-10">
+    <main className="min-h-screen overflow-x-hidden bg-[#07090f] pb-24 text-white sm:pb-0">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-5 sm:px-6 sm:py-8 lg:px-10">
 
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-violet-400">
@@ -690,7 +690,7 @@ export default function AdminCategoriesPage() {
               </span>
             </div>
 
-            <h1 className="mt-3 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">
+            <h1 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.035em] sm:text-5xl">
               Categories
             </h1>
 
@@ -703,7 +703,7 @@ export default function AdminCategoriesPage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-400 active:scale-[0.98]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/10 transition hover:bg-violet-400 active:scale-[0.98] sm:w-auto"
           >
             <PlusIcon size={18} strokeWidth={2} />
             Add Category
@@ -744,7 +744,7 @@ export default function AdminCategoriesPage() {
             STATS
         ================================================= */}
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 lg:grid-cols-4">
           <StatCard
             icon={<TagsIcon size={19} />}
             label="Total categories"
@@ -778,11 +778,11 @@ export default function AdminCategoriesPage() {
             CATEGORY TABLE
         ================================================= */}
 
-        <section className="mt-6 overflow-hidden rounded-3xl border border-white/[0.07] bg-[#0b0e15]">
+        <section className="mt-5 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b0e15] sm:mt-6 sm:rounded-3xl">
 
           {/* SEARCH + FILTERS */}
 
-          <div className="flex flex-col gap-4 border-b border-white/[0.06] p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative min-w-0 flex-1 lg:max-w-md">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/25">
                 <SearchIcon size={17} />
@@ -797,7 +797,7 @@ export default function AdminCategoriesPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-3 items-center gap-1 rounded-xl border border-white/[0.06] bg-black/20 p-1 sm:flex sm:w-auto sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0">
               {(
                 [
                   ["all", "All"],
@@ -809,7 +809,7 @@ export default function AdminCategoriesPage() {
                   key={value}
                   type="button"
                   onClick={() => setStatusFilter(value)}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-medium transition ${
+                  className={`min-h-10 rounded-lg px-2 py-2.5 text-[11px] font-medium transition sm:rounded-xl sm:px-4 sm:text-xs ${
                     statusFilter === value
                       ? "bg-white/[0.09] text-white shadow-sm"
                       : "text-white/35 hover:bg-white/[0.04] hover:text-white/70"
@@ -826,7 +826,7 @@ export default function AdminCategoriesPage() {
           ================================================= */}
 
           {filteredCategories.length === 0 ? (
-            <div className="px-6 py-20 text-center">
+            <div className="px-5 py-16 text-center sm:px-6 sm:py-20">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] text-white/25">
                 <SearchIcon size={21} />
               </div>
@@ -1058,11 +1058,11 @@ export default function AdminCategoriesPage() {
                   return (
                     <article
                       key={category.id}
-                      className="p-5"
+                      className="p-4 sm:p-5"
                     >
                       {/* TOP */}
 
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3.5">
                         <CategoryIcon name={category.name} />
 
                         <div className="min-w-0 flex-1">
@@ -1103,7 +1103,7 @@ export default function AdminCategoriesPage() {
 
                       {/* DETAILS */}
 
-                      <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3">
                         <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3">
                           <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/25">
                             Slug
@@ -1158,13 +1158,13 @@ export default function AdminCategoriesPage() {
 
                       {/* MOBILE ACTIONS */}
 
-                      <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2.5">
                         <button
                           type="button"
                           onClick={() =>
                             openEditModal(category)
                           }
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 text-xs font-medium text-white/55 transition hover:border-violet-400/20 hover:bg-violet-400/10 hover:text-violet-300"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 text-xs font-medium text-white/55 transition active:scale-[0.99] hover:border-violet-400/20 hover:bg-violet-400/10 hover:text-violet-300"
                         >
                           <PencilIcon size={14} />
                           Edit
@@ -1183,7 +1183,7 @@ export default function AdminCategoriesPage() {
                               ? "Delete category"
                               : "Category contains products"
                           }
-                          className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 ${
                             canDelete
                               ? "border-red-400/15 bg-red-400/[0.03] text-red-300/70 hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-300"
                               : "border-white/[0.06] bg-white/[0.02] text-white/25 hover:bg-white/[0.04]"
@@ -1224,18 +1224,18 @@ export default function AdminCategoriesPage() {
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeModal();
             }
           }}
         >
-          <div className="my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-white/[0.09] bg-[#0c0f17] shadow-2xl shadow-black/50">
+          <div className="w-full max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-white/[0.09] bg-[#0c0f17] shadow-2xl shadow-black/50 sm:my-auto sm:max-w-xl sm:rounded-3xl">
 
             {/* MODAL HEADER */}
 
-            <div className="flex items-start justify-between border-b border-white/[0.06] px-6 py-5">
+            <div className="flex items-start justify-between border-b border-white/[0.06] px-5 py-5 sm:px-6">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400">
                   Category management
@@ -1266,7 +1266,7 @@ export default function AdminCategoriesPage() {
 
             {/* MODAL BODY */}
 
-            <div className="space-y-5 px-6 py-6">
+            <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
 
               {/* NAME */}
 
@@ -1384,12 +1384,12 @@ export default function AdminCategoriesPage() {
 
             {/* MODAL FOOTER */}
 
-            <div className="flex items-center justify-end gap-3 border-t border-white/[0.06] px-6 py-5">
+            <div className="grid grid-cols-2 gap-3 border-t border-white/[0.06] px-5 py-4 sm:flex sm:items-center sm:justify-end sm:px-6 sm:py-5">
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-medium text-white/50 transition hover:bg-white/[0.04] hover:text-white disabled:opacity-40"
+                className="min-h-11 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-medium text-white/50 transition hover:bg-white/[0.04] hover:text-white disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -1398,7 +1398,7 @@ export default function AdminCategoriesPage() {
                 type="button"
                 onClick={saveCategory}
                 disabled={saving}
-                className="rounded-xl bg-violet-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
                   ? "Saving..."

@@ -724,7 +724,7 @@ export default function AdminOrderDetailsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#05070b] px-4 py-8 text-white sm:px-6 lg:px-10">
+      <main className="min-h-screen bg-[#05070b] px-4 pb-28 pt-5 text-white sm:px-6 sm:pb-10 sm:pt-8 lg:px-10 lg:pb-10">
         <div className="mx-auto max-w-[1400px] animate-pulse">
           <div className="h-4 w-28 rounded bg-white/[0.06]" />
           <div className="mt-8 h-12 w-80 rounded-xl bg-white/[0.06]" />
@@ -750,7 +750,7 @@ export default function AdminOrderDetailsPage() {
 
   if (error && !order) {
     return (
-      <main className="min-h-screen bg-[#05070b] px-5 py-10 text-white sm:px-8">
+      <main className="min-h-screen bg-[#05070b] px-4 pb-28 pt-5 text-white sm:px-8 sm:pb-10 sm:pt-10">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/admin/orders"
@@ -783,12 +783,26 @@ export default function AdminOrderDetailsPage() {
         <div className="absolute right-[-160px] top-[15%] h-[420px] w-[420px] rounded-full bg-sky-500/[0.035] blur-[130px]" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-4 pb-28 pt-5 sm:px-6 sm:pb-10 sm:pt-8 lg:px-8 lg:pb-10 xl:px-10">
+        {/* Mobile order navigation */}
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <Link
+            href="/admin/orders"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3.5 text-xs font-medium text-white/65 active:scale-[0.98]"
+          >
+            <Icon name="arrow" size={16} />
+            Orders
+          </Link>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">
+            Order details
+          </span>
+        </div>
+
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <header className="flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
+        <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/admin/orders"
@@ -800,7 +814,7 @@ export default function AdminOrderDetailsPage() {
               Back to orders
             </Link>
 
-            <div className="mt-8 flex items-center gap-3">
+            <div className="mt-6 flex items-center gap-3">
               <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-violet-400">
                 NEXORA ADMIN
               </span>
@@ -810,7 +824,7 @@ export default function AdminOrderDetailsPage() {
               </span>
             </div>
 
-            <h1 className="mt-3 text-[38px] font-semibold tracking-[-0.045em] text-white sm:text-5xl">
+            <h1 className="mt-3 text-[30px] font-semibold leading-tight tracking-[-0.045em] text-white sm:text-5xl">
               Order details
             </h1>
 
@@ -836,7 +850,7 @@ export default function AdminOrderDetailsPage() {
           </div>
 
           <div
-            className={`rounded-[20px] border px-5 py-4 ${statusTone(order.status).border} ${statusTone(order.status).bg} lg:min-w-[190px]`}
+            className={`w-full rounded-[18px] border px-4 py-3.5 ${statusTone(order.status).border} ${statusTone(order.status).bg} sm:w-auto sm:min-w-[190px]`}
           >
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">
               Current status
@@ -847,6 +861,12 @@ export default function AdminOrderDetailsPage() {
             </div>
           </div>
         </header>
+
+        {/* Mobile order snapshot */}
+        <div className="mt-4 grid grid-cols-2 gap-2.5 lg:hidden">
+          <MiniStat label="Items" value={order.items.length} />
+          <MiniStat label="Total" value={money(order.totalAmount)} tone="green" />
+        </div>
 
         {/* =================================================
             ERROR / SUCCESS
@@ -863,15 +883,15 @@ export default function AdminOrderDetailsPage() {
             ORDER TIMELINE
         ================================================= */}
 
-        <section className="mt-8 overflow-hidden rounded-[22px] border border-white/[0.075] bg-[#090d16]/90 px-5 py-8 shadow-[0_18px_55px_rgba(0,0,0,0.12)] sm:px-8">
+        <section className="mt-5 overflow-hidden rounded-[20px] border border-white/[0.075] bg-[#090d16]/90 px-3.5 py-6 shadow-[0_18px_55px_rgba(0,0,0,0.12)] sm:mt-8 sm:px-8 sm:py-8">
           {hasNormalStatus ? (
             <div className="relative">
               {/* Base line */}
-              <div className="absolute left-[10%] right-[10%] top-5 h-px bg-white/[0.08]" />
+              <div className="absolute left-[10%] right-[10%] top-4 h-px bg-white/[0.08] sm:top-5" />
 
               {/* Active line */}
               <div
-                className="absolute left-[10%] top-5 h-px bg-gradient-to-r from-violet-500 via-fuchsia-400 to-violet-500 transition-all duration-700"
+                className="absolute left-[10%] top-4 h-px bg-gradient-to-r from-violet-500 via-fuchsia-400 to-violet-500 transition-all duration-700 sm:top-5"
                 style={{ width: `calc(${progressPercent} * 0.8)` }}
               />
 
@@ -911,7 +931,7 @@ export default function AdminOrderDetailsPage() {
                         {label(status)}
                       </p>
 
-                      <p className="mt-1 text-[9px] text-white/20 sm:text-[10px]">
+                      <p className="mt-1 text-[8px] text-white/20 sm:text-[10px]">
                         {current
                           ? "Current"
                           : completed
@@ -947,7 +967,7 @@ export default function AdminOrderDetailsPage() {
             TOP CONTENT
         ================================================= */}
 
-        <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.8fr)]">
+        <div className="mt-5 grid items-stretch gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.8fr)]">
           {/* ORDER ITEMS */}
           <SectionCard
             icon={<Icon name="package" />}
@@ -966,7 +986,7 @@ export default function AdminOrderDetailsPage() {
               {order.items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-4 px-6 py-6"
+                  className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-6"
                 >
                   {(() => {
                     const imageSrc =
@@ -979,7 +999,7 @@ export default function AdminOrderDetailsPage() {
                       null;
 
                     return imageSrc ? (
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/[0.09] bg-white/[0.035] shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[16px] sm:h-16 sm:w-16 border border-white/[0.09] bg-white/[0.035] shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
                         <img
                           src={imageSrc}
                           alt={item.productName}
@@ -988,14 +1008,14 @@ export default function AdminOrderDetailsPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-400/[0.10] to-white/[0.02] text-xs font-semibold text-white/35">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] sm:h-16 sm:w-16 border border-white/[0.08] bg-gradient-to-br from-violet-400/[0.10] to-white/[0.02] text-xs font-semibold text-white/35">
                         {String(index + 1).padStart(2, "0")}
                       </div>
                     );
                   })()}
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold text-white">
+                    <p className="line-clamp-2 text-[14px] font-semibold leading-5 text-white sm:text-[15px]">
                       {item.productName}
                     </p>
 
@@ -1006,7 +1026,7 @@ export default function AdminOrderDetailsPage() {
                     </div>
                   </div>
 
-                  <div className="shrink-0 text-right">
+                  <div className="w-[92px] shrink-0 text-right sm:w-auto">
                     <p className="text-xs text-white/25">
                       {money(item.unitPrice)} × {item.quantity}
                     </p>
@@ -1147,7 +1167,7 @@ export default function AdminOrderDetailsPage() {
             CUSTOMER + DELIVERY
         ================================================= */}
 
-        <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-2">
+        <div className="mt-4 grid items-stretch gap-4 sm:mt-6 sm:gap-5 lg:grid-cols-2">
           <SectionCard
             icon={<Icon name="user" />}
             className="h-full"
@@ -1248,7 +1268,7 @@ export default function AdminOrderDetailsPage() {
           ================================================= */}
           <div className="grid lg:grid-cols-2">
             {/* ORDER STATUS */}
-            <div className="flex min-h-[380px] flex-col border-b border-white/[0.065] p-6 lg:border-b-0 lg:border-r lg:p-7">
+            <div className="flex min-h-0 flex-col border-b border-white/[0.065] p-4 sm:min-h-[380px] sm:p-6 lg:border-b-0 lg:border-r lg:p-7">
               <div className="flex items-start gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-violet-400/15 bg-violet-400/[0.06] text-violet-300">
                   <Icon name="refresh" size={18} />
@@ -1267,7 +1287,7 @@ export default function AdminOrderDetailsPage() {
                 </div>
               </div>
 
-              <div className="mt-7">
+              <div className="mt-5 sm:mt-7">
                 <label
                   htmlFor="order-status"
                   className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30"
@@ -1328,7 +1348,7 @@ export default function AdminOrderDetailsPage() {
             </div>
 
             {/* SHIPMENT */}
-            <div className="flex min-h-[380px] flex-col p-6 lg:p-7">
+            <div className="flex min-h-0 flex-col p-4 sm:min-h-[380px] sm:p-6 lg:p-7">
               <div className="flex items-start gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-sky-400/15 bg-sky-400/[0.06] text-sky-300">
                   <Icon name="truck" size={18} />
@@ -1347,7 +1367,7 @@ export default function AdminOrderDetailsPage() {
                 </div>
               </div>
 
-              <div className="mt-7">
+              <div className="mt-5 sm:mt-7">
                 <label
                   htmlFor="shipment-status"
                   className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30"
@@ -1374,7 +1394,7 @@ export default function AdminOrderDetailsPage() {
                 </select>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label
                     htmlFor="courier"
@@ -1449,7 +1469,7 @@ export default function AdminOrderDetailsPage() {
           {/* =================================================
               LATEST SHIPMENT
           ================================================= */}
-          <div className="border-t border-white/[0.065] bg-white/[0.012] px-6 py-6 lg:px-7">
+          <div className="border-t border-white/[0.065] bg-white/[0.012] px-4 py-5 sm:px-6 sm:py-6 lg:px-7">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/28">
@@ -1462,7 +1482,7 @@ export default function AdminOrderDetailsPage() {
             </div>
 
             {order.shipment ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <MiniStat
                   label="Courier"
                   value={order.shipment.courier || "Not assigned"}
@@ -1499,7 +1519,7 @@ export default function AdminOrderDetailsPage() {
             FOOTER
         ================================================= */}
 
-        <footer className="flex flex-col gap-2 border-t border-white/[0.06] py-8 text-xs text-white/25 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-2 border-t border-white/[0.06] py-7 text-xs text-white/25 sm:flex-row sm:items-center sm:justify-between">
           <span>NEXORA Admin • Order management</span>
 
           <Link

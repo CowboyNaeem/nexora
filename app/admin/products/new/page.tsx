@@ -13,6 +13,7 @@ type ImagePreview = {
   id: string;
   url: string;
   name: string;
+  uploading?: boolean;
 };
 
 type Category = {
@@ -66,10 +67,11 @@ export default function NewProductPage() {
   const [optionsError, setOptionsError] = useState("");
 
   /* =========================================================
-     IMAGE PREVIEWS
+     IMAGES
   ========================================================= */
 
   const [images, setImages] = useState<ImagePreview[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   /* =========================================================
      SUBMIT STATE
@@ -149,11 +151,6 @@ export default function NewProductPage() {
         setBrands(loadedBrands);
         setStores(loadedStores);
 
-        /*
-         * If there is only one store, select it automatically.
-         * Your current database has one store, so this makes
-         * product creation easier.
-         */
         if (loadedStores.length === 1) {
           setStoreId(loadedStores[0].id);
         }
@@ -175,10 +172,96 @@ export default function NewProductPage() {
   }, []);
 
   /* =========================================================
-     IMAGE SELECTION
+     IMAGE UPLOAD
   ========================================================= */
 
-  const handleImageChange = (
+  const uploadImage = async (file: File) => {
+    const temporaryId = `${file.name}-${file.lastModified}-${Math.random()}`;
+
+    /*
+     * Show the image immediately while it uploads.
+     */
+    const previewUrl = URL.createObjectURL(file);
+
+    const temporaryImage: ImagePreview = {
+      id: temporaryId,
+      url: previewUrl,
+      name: file.name,
+      uploading: true,
+    };
+
+    setImages((current) => [
+      ...current,
+      temporaryImage,
+    ]);
+
+    try {
+      setUploadingImages(true);
+      setFormError("");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(
+        "/api/admin/upload",
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.url) {
+        throw new Error(
+          data.message ||
+            "Failed to upload image."
+        );
+      }
+
+      /*
+       * Remove the temporary browser URL because
+       * the permanent Vercel Blob URL is now available.
+       */
+      URL.revokeObjectURL(previewUrl);
+
+      setImages((current) =>
+        current.map((image) =>
+          image.id === temporaryId
+            ? {
+                ...image,
+                url: data.url,
+                uploading: false,
+              }
+            : image
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Image upload error:",
+        error
+      );
+
+      URL.revokeObjectURL(previewUrl);
+
+      setImages((current) =>
+        current.filter(
+          (image) => image.id !== temporaryId
+        )
+      );
+
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Failed to upload image."
+      );
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleImageChange = async (
     event: ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(
@@ -186,21 +269,32 @@ export default function NewProductPage() {
     );
 
     const imageFiles = files.filter((file) =>
-      ["image/jpeg", "image/png", "image/webp"].includes(
-        file.type
-      )
+      [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ].includes(file.type)
     );
 
-    const previews = imageFiles.map((file) => ({
-      id: `${file.name}-${file.lastModified}-${Math.random()}`,
-      url: URL.createObjectURL(file),
-      name: file.name,
-    }));
+    if (imageFiles.length !== files.length) {
+      setFormError(
+        "Only JPG, PNG and WEBP images are allowed."
+      );
+    }
 
-    setImages((current) => [
-      ...current,
-      ...previews,
-    ]);
+    if (imageFiles.length === 0) {
+      event.target.value = "";
+      return;
+    }
+
+    /*
+     * Upload all selected images.
+     */
+    await Promise.all(
+      imageFiles.map((file) =>
+        uploadImage(file)
+      )
+    );
 
     /*
      * Allow selecting the same file again.
@@ -218,7 +312,14 @@ export default function NewProductPage() {
         (image) => image.id === id
       );
 
-      if (imageToRemove) {
+      /*
+       * Only revoke local browser preview URLs.
+       * Vercel Blob URLs must not be revoked.
+       */
+      if (
+        imageToRemove &&
+        imageToRemove.url.startsWith("blob:")
+      ) {
         URL.revokeObjectURL(
           imageToRemove.url
         );
@@ -229,18 +330,6 @@ export default function NewProductPage() {
       );
     });
   };
-
-  /* =========================================================
-     CLEANUP IMAGE OBJECT URLS
-  ========================================================= */
-
-  useEffect(() => {
-    return () => {
-      images.forEach((image) => {
-        URL.revokeObjectURL(image.url);
-      });
-    };
-  }, [images]);
 
   /* =========================================================
      CREATE PRODUCT
@@ -293,6 +382,32 @@ export default function NewProductPage() {
       return;
     }
 
+    /*
+     * Do not allow product creation while
+     * an image is still uploading.
+     */
+    if (uploadingImages) {
+      setFormError(
+        "Please wait until all images finish uploading."
+      );
+      return;
+    }
+
+    /*
+     * Make sure no temporary/uploading image
+     * remains.
+     */
+    if (
+      images.some(
+        (image) => image.uploading
+      )
+    ) {
+      setFormError(
+        "Please wait until all images finish uploading."
+      );
+      return;
+    }
+
     try {
       setCreating(true);
 
@@ -306,7 +421,9 @@ export default function NewProductPage() {
           credentials: "include",
           body: JSON.stringify({
             name: productName.trim(),
+
             sku: sku.trim(),
+
             description:
               description.trim() || null,
 
@@ -332,21 +449,26 @@ export default function NewProductPage() {
                 : 0,
 
             /*
-             * Local image previews are intentionally
-             * not sent to the database yet.
-             *
-             * The browser's blob URLs are temporary.
-             * We will add permanent image uploading
-             * in the next stage.
+             * These are now permanent Vercel Blob URLs.
              */
-            images: [],
+            images: images.map(
+              (image) => ({
+                url: image.url,
+                altText:
+                  productName.trim(),
+              })
+            ),
           }),
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         throw new Error(
           data.message ||
             "Failed to create product."
@@ -357,12 +479,10 @@ export default function NewProductPage() {
         "Product created successfully."
       );
 
-      /*
-       * Give the success message a moment to appear,
-       * then return to the products page.
-       */
       setTimeout(() => {
-        router.push("/admin/products");
+        router.push(
+          "/admin/products"
+        );
         router.refresh();
       }, 800);
     } catch (error) {
@@ -449,7 +569,10 @@ export default function NewProductPage() {
                 className={`h-2 w-2 rounded-full ${statusColor}`}
               />
 
-              {status.replaceAll("_", " ")}
+              {status.replaceAll(
+                "_",
+                " "
+              )}
             </div>
           </div>
         </div>
@@ -487,13 +610,11 @@ export default function NewProductPage() {
         ===================================================== */}
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.5fr]">
-
           {/* ===================================================
               LEFT COLUMN
           =================================================== */}
 
           <div className="space-y-6">
-
             {/* -------------------------------------------------
                 PRODUCT IMAGES
             ------------------------------------------------- */}
@@ -504,30 +625,48 @@ export default function NewProductPage() {
                 description="Add clear images of your product."
               />
 
-              <label className="group mt-6 flex min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-6 text-center transition hover:border-violet-500/50 hover:bg-violet-500/[0.03]">
+              <label
+                className={`group mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed px-6 text-center transition ${
+                  uploadingImages
+                    ? "cursor-wait border-violet-500/40 bg-violet-500/[0.03]"
+                    : "cursor-pointer border-white/15 bg-black/20 hover:border-violet-500/50 hover:bg-violet-500/[0.03]"
+                }`}
+              >
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   multiple
-                  onChange={handleImageChange}
+                  onChange={
+                    handleImageChange
+                  }
+                  disabled={
+                    uploadingImages
+                  }
                   className="hidden"
                 />
 
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400 transition group-hover:scale-105 group-hover:bg-violet-500/15">
-                  <UploadIcon />
+                  {uploadingImages ? (
+                    <LoadingIcon />
+                  ) : (
+                    <UploadIcon />
+                  )}
                 </div>
 
                 <h3 className="mt-5 font-semibold text-white">
-                  Upload product images
+                  {uploadingImages
+                    ? "Uploading images..."
+                    : "Upload product images"}
                 </h3>
 
                 <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-500">
-                  Drag and drop images here, or click
-                  to browse from your computer.
+                  {uploadingImages
+                    ? "Please wait while your images are being uploaded."
+                    : "Drag and drop images here, or click to browse from your computer."}
                 </p>
 
                 <span className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-zinc-300">
-                  JPG, PNG or WEBP
+                  JPG, PNG or WEBP · Max 5 MB
                 </span>
               </label>
 
@@ -542,27 +681,46 @@ export default function NewProductPage() {
                         <img
                           src={image.url}
                           alt={image.name}
-                          className="h-32 w-full object-cover"
+                          className={`h-32 w-full object-cover transition ${
+                            image.uploading
+                              ? "opacity-50"
+                              : ""
+                          }`}
                         />
 
-                        {index === 0 && (
-                          <span className="absolute left-2 top-2 rounded-md bg-violet-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wider">
-                            Primary
-                          </span>
+                        {index === 0 &&
+                          !image.uploading && (
+                            <span className="absolute left-2 top-2 rounded-md bg-violet-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wider">
+                              Primary
+                            </span>
+                          )}
+
+                        {image.uploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                            <div className="flex flex-col items-center gap-2">
+                              <LoadingIcon />
+
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                                Uploading
+                              </span>
+                            </div>
+                          </div>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeImage(
-                              image.id
-                            )
-                          }
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-zinc-300 opacity-0 backdrop-blur transition hover:bg-red-500 hover:text-white group-hover:opacity-100"
-                          aria-label={`Remove ${image.name}`}
-                        >
-                          <CloseIcon />
-                        </button>
+                        {!image.uploading && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeImage(
+                                image.id
+                              )
+                            }
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-zinc-300 opacity-0 backdrop-blur transition hover:bg-red-500 hover:text-white group-hover:opacity-100"
+                            aria-label={`Remove ${image.name}`}
+                          >
+                            <CloseIcon />
+                          </button>
+                        )}
                       </div>
                     )
                   )}
@@ -570,9 +728,7 @@ export default function NewProductPage() {
               )}
 
               <p className="mt-4 text-xs text-zinc-600">
-                Image previews are available now.
-                Permanent image storage will be
-                connected in the next step.
+                Images upload automatically and are securely stored in NEXORA&apos;s image storage.
               </p>
             </section>
 
@@ -610,7 +766,6 @@ export default function NewProductPage() {
           =================================================== */}
 
           <div className="space-y-6">
-
             {/* -------------------------------------------------
                 PRODUCT INFORMATION
             ------------------------------------------------- */}
@@ -622,7 +777,6 @@ export default function NewProductPage() {
               />
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
-
                 <Field
                   label="Product Name"
                   placeholder="e.g. Premium Wireless Headphones"
@@ -742,7 +896,6 @@ export default function NewProductPage() {
               />
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
-
                 <Field
                   label="Price"
                   placeholder="0.00"
@@ -805,7 +958,6 @@ export default function NewProductPage() {
               />
 
               <div className="mt-6 flex gap-4 rounded-xl border border-white/10 bg-black/20 p-4">
-
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
                   {images[0] ? (
                     <img
@@ -852,14 +1004,12 @@ export default function NewProductPage() {
 
         <div className="sticky bottom-4 z-20 mt-8 rounded-2xl border border-white/10 bg-[#0b0e15]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl">
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-
             <p className="hidden text-xs text-zinc-500 sm:block">
               You can save this product as a draft
               and activate it later.
             </p>
 
             <div className="flex w-full gap-3 sm:w-auto">
-
               <Link
                 href="/admin/products"
                 className="flex h-11 flex-1 items-center justify-center rounded-xl border border-white/10 px-5 text-sm font-semibold text-zinc-300 transition hover:bg-white/[0.05] hover:text-white sm:flex-none"
@@ -871,7 +1021,8 @@ export default function NewProductPage() {
                 type="submit"
                 disabled={
                   creating ||
-                  loadingOptions
+                  loadingOptions ||
+                  uploadingImages
                 }
                 className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
@@ -880,6 +1031,11 @@ export default function NewProductPage() {
                     <LoadingIcon />
                     Creating...
                   </>
+                ) : uploadingImages ? (
+                  <>
+                    <LoadingIcon />
+                    Uploading...
+                  </>
                 ) : (
                   <>
                     <PlusIcon />
@@ -887,7 +1043,6 @@ export default function NewProductPage() {
                   </>
                 )}
               </button>
-
             </div>
           </div>
         </div>
@@ -1179,7 +1334,7 @@ function ChevronDownIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -1191,7 +1346,7 @@ function ChevronDownIcon() {
 function LoadingIcon() {
   return (
     <svg
-      className="h-4 w-4 animate-spin"
+      className="h-5 w-5 animate-spin"
       viewBox="0 0 24 24"
       fill="none"
     >

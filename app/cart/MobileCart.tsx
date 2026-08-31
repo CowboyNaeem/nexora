@@ -31,6 +31,19 @@ type MobileCartProps = {
   loading?: boolean;
 };
 
+function Skeleton({
+  className = "",
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`animate-pulse rounded bg-white/[0.055] ${className}`}
+    />
+  );
+}
+
 export default function MobileCart({
   items,
   totalQuantity,
@@ -49,39 +62,171 @@ export default function MobileCart({
     return `${totalQuantity} ITEMS`;
   }, [totalQuantity]);
 
+  /*
+   * =========================================================
+   * LOADING STATE
+   * =========================================================
+   */
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#070709] pb-28 pt-5 text-white">
-        <div className="mx-auto max-w-md px-5 animate-pulse">
-          <div className="h-11 w-full rounded-2xl bg-white/[0.04]" />
+        <div className="mx-auto w-full max-w-md px-5">
+          {/* =================================================
+              HEADER SKELETON
+          ================================================= */}
 
-          <div className="mt-7 h-6 w-32 rounded-lg bg-white/[0.05]" />
-          <div className="mt-3 h-4 w-20 rounded bg-white/[0.04]" />
+          <header className="flex items-center justify-between">
+            <Skeleton className="h-11 w-11 rounded-2xl" />
 
-          <div className="mt-7 space-y-3">
+            <div className="flex flex-col items-center">
+              <Skeleton className="h-2.5 w-16 rounded" />
+              <Skeleton className="mt-2 h-4 w-24 rounded-lg" />
+            </div>
+
+            <Skeleton className="h-11 w-11 rounded-2xl" />
+          </header>
+
+          {/* =================================================
+              SHOPPING BAG HEADER
+          ================================================= */}
+
+          <section className="mt-8">
+            <Skeleton className="h-2.5 w-24 rounded" />
+
+            <div className="mt-3 flex items-end justify-between">
+              <Skeleton className="h-7 w-40 rounded-lg" />
+
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          </section>
+
+          {/* =================================================
+              CART ITEMS
+          ================================================= */}
+
+          <section className="mt-7 space-y-3">
+            {[1, 2, 3].map((item) => (
+              <article
+                key={item}
+                className="relative overflow-hidden rounded-[22px] border border-white/[0.07] bg-white/[0.025] p-3.5"
+              >
+                <div className="flex gap-3">
+                  {/* Product image */}
+
+                  <Skeleton className="h-[92px] w-[92px] shrink-0 rounded-[17px]" />
+
+                  {/* Product information */}
+
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3.5 w-[78%] rounded" />
+
+                    <Skeleton className="mt-2 h-2.5 w-20 rounded" />
+
+                    <Skeleton className="mt-3 h-4 w-20 rounded" />
+
+                    <Skeleton className="mt-3 h-9 w-[108px] rounded-xl" />
+                  </div>
+                </div>
+
+                {/* Remove button */}
+
+                <Skeleton className="absolute right-3.5 top-3.5 h-8 w-8 rounded-full" />
+              </article>
+            ))}
+          </section>
+
+          {/* =================================================
+              ORDER SUMMARY
+          ================================================= */}
+
+          <section className="mt-6 overflow-hidden rounded-[24px] border border-white/[0.07] bg-white/[0.025]">
+            <div className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Skeleton className="h-2.5 w-16 rounded" />
+
+                  <Skeleton className="mt-2 h-5 w-28 rounded-lg" />
+                </div>
+
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-10 rounded" />
+                  <Skeleton className="h-3 w-7 rounded" />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-14 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-3 w-10 rounded" />
+                </div>
+
+                <div className="h-px bg-white/[0.06]" />
+
+                <div className="flex items-end justify-between">
+                  <Skeleton className="h-3 w-10 rounded" />
+                  <Skeleton className="h-7 w-24 rounded-lg" />
+                </div>
+              </div>
+            </div>
+
+            {/* Checkout buttons */}
+
+            <div className="border-t border-white/[0.07] p-4">
+              <Skeleton className="h-13 w-full rounded-2xl" />
+
+              <Skeleton className="mt-3 h-11 w-full rounded-2xl" />
+            </div>
+          </section>
+
+          {/* =================================================
+              TRUST STRIP
+          ================================================= */}
+
+          <section className="mt-5 grid grid-cols-3 gap-2 pb-6">
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-32 rounded-2xl border border-white/[0.06] bg-white/[0.025]"
-              />
-            ))}
-          </div>
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-2 py-3"
+              >
+                <Skeleton className="mx-auto h-4 w-4 rounded" />
 
-          <div className="mt-6 h-48 rounded-2xl border border-white/[0.06] bg-white/[0.025]" />
+                <Skeleton className="mx-auto mt-2 h-2.5 w-12 rounded" />
+
+                <Skeleton className="mx-auto mt-1 h-2 w-14 rounded" />
+              </div>
+            ))}
+          </section>
         </div>
+
+        {/* ===================================================
+            GLOBAL MOBILE BOTTOM NAVIGATION
+        =================================================== */}
 
         <MobileBottomNav />
       </main>
     );
   }
 
+  /*
+   * =========================================================
+   * NORMAL CART UI
+   * =========================================================
+   */
+
   return (
     <main className="min-h-screen bg-[#070709] pb-28 text-white">
       <div className="mx-auto w-full max-w-md px-5 pt-5">
-
-        {/* =====================================================
+        {/* ===================================================
             HEADER
-        ===================================================== */}
+        =================================================== */}
 
         <header className="flex items-center justify-between">
           <Link
@@ -111,9 +256,9 @@ export default function MobileCart({
           </Link>
         </header>
 
-        {/* =====================================================
+        {/* ===================================================
             CART COUNT
-        ===================================================== */}
+        =================================================== */}
 
         <div className="mt-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-violet-400">
@@ -135,9 +280,9 @@ export default function MobileCart({
           </div>
         </div>
 
-        {/* =====================================================
+        {/* ===================================================
             ERROR
-        ===================================================== */}
+        =================================================== */}
 
         {error && (
           <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3">
@@ -149,9 +294,9 @@ export default function MobileCart({
           </div>
         )}
 
-        {/* =====================================================
+        {/* ===================================================
             SUCCESS NOTICE
-        ===================================================== */}
+        =================================================== */}
 
         {notice && (
           <div className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
@@ -161,13 +306,12 @@ export default function MobileCart({
           </div>
         )}
 
-        {/* =====================================================
+        {/* ===================================================
             EMPTY CART
-        ===================================================== */}
+        =================================================== */}
 
         {items.length === 0 ? (
           <section className="mt-8 rounded-[28px] border border-white/[0.07] bg-white/[0.025] px-6 py-14 text-center">
-
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-violet-400/20 bg-violet-500/[0.08]">
               <span className="text-3xl text-violet-300">
                 ♡
@@ -221,7 +365,6 @@ export default function MobileCart({
                     className="relative overflow-hidden rounded-[22px] border border-white/[0.07] bg-white/[0.025] p-3.5"
                   >
                     <div className="flex gap-3">
-
                       {/* Product image */}
 
                       <div className="h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[17px] bg-white/[0.04]">
@@ -256,7 +399,6 @@ export default function MobileCart({
                         {/* Quantity */}
 
                         <div className="mt-3 inline-flex h-9 items-center overflow-hidden rounded-xl border border-white/[0.09] bg-black/30">
-
                           <button
                             type="button"
                             disabled={item.quantity <= 1}
@@ -289,7 +431,6 @@ export default function MobileCart({
                           >
                             +
                           </button>
-
                         </div>
                       </div>
                     </div>
@@ -316,9 +457,7 @@ export default function MobileCart({
             ================================================= */}
 
             <section className="mt-6 overflow-hidden rounded-[24px] border border-white/[0.07] bg-white/[0.025]">
-
               <div className="p-5">
-
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400">
@@ -336,7 +475,6 @@ export default function MobileCart({
                 </div>
 
                 <div className="mt-6 space-y-4">
-
                   <div className="flex justify-between text-sm">
                     <span className="text-white/40">
                       Items
@@ -378,14 +516,12 @@ export default function MobileCart({
                       ${total.toFixed(2)}
                     </span>
                   </div>
-
                 </div>
               </div>
 
               {/* Checkout */}
 
               <div className="border-t border-white/[0.07] p-4">
-
                 <Link
                   href="/checkout"
                   className="flex h-13 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 text-sm font-semibold text-white shadow-lg shadow-violet-500/15 transition active:scale-[0.98]"
@@ -403,7 +539,6 @@ export default function MobileCart({
                 >
                   Continue Shopping
                 </Link>
-
               </div>
             </section>
 
@@ -412,7 +547,6 @@ export default function MobileCart({
             ================================================= */}
 
             <section className="mt-5 grid grid-cols-3 gap-2 pb-6">
-
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-2 py-3 text-center">
                 <div className="text-sm text-violet-300">
                   ◇
@@ -454,7 +588,6 @@ export default function MobileCart({
                   Returns
                 </p>
               </div>
-
             </section>
           </>
         )}
